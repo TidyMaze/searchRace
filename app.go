@@ -63,6 +63,21 @@ func diffAngle(a1 float64, a2 float64) float64 {
 	return regularizeAngle(a2 - a1)
 }
 
+func restrictAngle(current float64, requested float64) float64 {
+	return clampAngle(requested, current-toRadians(MAX_ANGLE_DIFF_DEGREE), current+toRadians(MAX_ANGLE_DIFF_DEGREE))
+}
+
+func clampAngle(a float64, minA float64, maxA float64) float64 {
+	if diffAngle(minA, a) >= 0 && diffAngle(a, maxA) >= 0 {
+		return a
+	}
+	if math.Abs(diffAngle(a, minA)) <= math.Abs(diffAngle(a, maxA)) {
+		return minA
+	} else {
+		return maxA
+	}
+}
+
 func setup() {
 	rand.Seed(time.Now().UnixNano())
 	p5.Canvas(MAP_WIDTH*SCALE, MAP_HEIGHT*SCALE)
@@ -285,6 +300,15 @@ func main() {
 	assert(diffAngle(toRadians(10), toRadians(-30)), toRadians(-40))
 	assert(diffAngle(toRadians(10), toRadians(330)), toRadians(-40))
 	assert(diffAngle(toRadians(350), toRadians(-350)), toRadians(20))
+
+	assert(clampAngle(toRadians(30), toRadians(20), toRadians(40)), toRadians(30))
+	assert(clampAngle(toRadians(20), toRadians(20), toRadians(40)), toRadians(20))
+	assert(clampAngle(toRadians(10), toRadians(20), toRadians(40)), toRadians(20))
+	assert(clampAngle(toRadians(50), toRadians(20), toRadians(40)), toRadians(40))
+
+	assert(restrictAngle(toRadians(30), toRadians(30)), toRadians(30))
+	assert(restrictAngle(toRadians(30), toRadians(0)), toRadians(12))
+	assert(restrictAngle(toRadians(30), toRadians(60)), toRadians(48))
 
 	p5.Run(setup, draw)
 }
