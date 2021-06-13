@@ -212,16 +212,16 @@ func normalVectorFromAngle(a float64) Vector {
 func udpdateLoop() {
 	for checkpointsMapIndex = 0; checkpointsMapIndex < len(allMaps); checkpointsMapIndex += 1 {
 
+		lap = 0
+		idxCheckpoint = 0
+		thisMapSteps = 0
+
 		for over := false; !over; {
 			over = update(100)
 			time.Sleep(time.Duration(2 * time.Millisecond))
 		}
 
-		lap = 0
-		idxCheckpoint = 0
 		log("Done map ", fmt.Sprintf("map %d in %d steps", checkpointsMapIndex, thisMapSteps))
-		thisMapSteps = 0
-
 	}
 	log("took", totalSteps)
 }
