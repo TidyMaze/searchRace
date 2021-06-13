@@ -43,7 +43,9 @@ func log(msg string, v interface{}) {
 	fmt.Fprintf(os.Stderr, "%s: %v\n", msg, v)
 }
 
-func toRadians(a float64) float64 { return float64(a * math.Pi / 180) }
+func toRadians(a float64) float64 {
+	return regularizeAngle(float64(a * math.Pi / 180))
+}
 
 func toDegrees(a float64) float64 { return float64(a * 180 / math.Pi) }
 
@@ -167,6 +169,13 @@ func vectorBetween(c1 Coord, c2 Coord) Vector {
 	}
 }
 
+func assert(v float64, v2 float64) {
+	diff := v2 - v
+	if math.Abs(diff) > 0.0000001 {
+		panic(fmt.Sprintf("%f did not equal %f diff %.100f", v, v2, diff))
+	}
+}
+
 func draw() {
 	// newMap = randomMap()
 	thrust := 200
@@ -263,5 +272,19 @@ func mainCG() {
 }
 
 func main() {
+
+	assert(toRadians(0), 0)
+	assert(toRadians(180), math.Pi)
+	assert(toRadians(360), 0)
+	assert(toRadians(390), toRadians(30))
+	assert(toRadians(-180), -math.Pi)
+	assert(toRadians(-360), 0)
+
+	assert(diffAngle(toRadians(10), toRadians(30)), toRadians(20))
+	assert(diffAngle(toRadians(30), toRadians(10)), toRadians(-20))
+	assert(diffAngle(toRadians(10), toRadians(-30)), toRadians(-40))
+	assert(diffAngle(toRadians(10), toRadians(330)), toRadians(-40))
+	assert(diffAngle(toRadians(350), toRadians(-350)), toRadians(20))
+
 	p5.Run(setup, draw)
 }
