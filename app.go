@@ -19,11 +19,13 @@ const SCALE = 0.1
 const CP_DIAMETER = 600 * 2
 const PADDING = 1000
 const MAX_ANGLE_DIFF_DEGREE = 18
+const MAPS_PANEL_SIZE = 100
 
 var checkpointsMapIndex int
 var car Car
 var idxCheckpoint = 0
 var allMaps [][]Coord
+var thisMapSteps = 0
 var totalSteps = 0
 
 var latestMapIndex int
@@ -90,10 +92,8 @@ func setup() {
 	p5.Canvas(MAP_WIDTH*SCALE, MAP_HEIGHT*SCALE)
 	p5.Background(color.Gray{Y: 220})
 
-	mapsPanelSize := 10
-
-	allMaps = make([][]Coord, 0, mapsPanelSize)
-	for i := 0; i < mapsPanelSize; i++ {
+	allMaps = make([][]Coord, 0, MAPS_PANEL_SIZE)
+	for i := 0; i < MAPS_PANEL_SIZE; i++ {
 		allMaps = append(allMaps, randomMap())
 	}
 
@@ -257,17 +257,19 @@ func update() {
 	car.x = math.Trunc(car.x)
 	car.y = math.Trunc(car.y)
 
-	if dist(Coord{car.x, car.y}, target) < 600 {
-		if lap == 5 && idxCheckpoint == 0 {
-			lap = 0
-			idxCheckpoint = 0
-			checkpointsMapIndex = checkpointsMapIndex + 1
-		} else {
-			if idxCheckpoint == 0 {
-				lap += 1
-			}
-			idxCheckpoint = (idxCheckpoint + 1) % len(allMaps[checkpointsMapIndex])
+	thisMapSteps += 1
+
+	if (dist(Coord{car.x, car.y}, target) < 600 && lap == 5 && idxCheckpoint == 0) || thisMapSteps > 10000 {
+		lap = 0
+		idxCheckpoint = 0
+		log("Done map ", fmt.Sprintf("map %d in %d steps", checkpointsMapIndex, thisMapSteps))
+		checkpointsMapIndex = checkpointsMapIndex + 1
+		thisMapSteps = 0
+	} else if dist(Coord{car.x, car.y}, target) < 600 {
+		if idxCheckpoint == 0 {
+			lap += 1
 		}
+		idxCheckpoint = (idxCheckpoint + 1) % len(allMaps[checkpointsMapIndex])
 	}
 }
 
