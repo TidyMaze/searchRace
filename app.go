@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/go-p5/p5"
@@ -27,10 +26,6 @@ var idxCheckpoint = 0
 var allMaps [][]Coord
 var thisMapSteps = 0
 var totalSteps = 0
-
-var latestMapIndex int
-var latestCar Car
-var latestMutex sync.Mutex
 
 var lap = 0
 
@@ -215,16 +210,23 @@ func normalVectorFromAngle(a float64) Vector {
 }
 
 func udpdateLoop() {
-	for checkpointsMapIndex < len(allMaps) {
-		update()
-		totalSteps += 1
+	for checkpointsMapIndex = 0; checkpointsMapIndex < len(allMaps); checkpointsMapIndex += 1 {
+
+		for over := false; !over; {
+			over = update(100)
+		}
+
+		lap = 0
+		idxCheckpoint = 0
+		log("Done map ", fmt.Sprintf("map %d in %d steps", checkpointsMapIndex, thisMapSteps))
+		checkpointsMapIndex = checkpointsMapIndex + 1
+		thisMapSteps = 0
+
 	}
 	log("took", totalSteps)
 }
 
-func update() {
-	// newMap = randomMap()
-	thrust := 100
+func update(thrust int) bool {
 
 	target := allMaps[checkpointsMapIndex][idxCheckpoint]
 
@@ -258,18 +260,18 @@ func update() {
 	car.y = math.Trunc(car.y)
 
 	thisMapSteps += 1
+	totalSteps += 1
 
 	if (dist(Coord{car.x, car.y}, target) < 600 && lap == 5 && idxCheckpoint == 0) || thisMapSteps > 10000 {
-		lap = 0
-		idxCheckpoint = 0
-		log("Done map ", fmt.Sprintf("map %d in %d steps", checkpointsMapIndex, thisMapSteps))
-		checkpointsMapIndex = checkpointsMapIndex + 1
-		thisMapSteps = 0
+		return true
 	} else if dist(Coord{car.x, car.y}, target) < 600 {
 		if idxCheckpoint == 0 {
 			lap += 1
 		}
 		idxCheckpoint = (idxCheckpoint + 1) % len(allMaps[checkpointsMapIndex])
+		return false
+	} else {
+		return false
 	}
 }
 
