@@ -221,13 +221,14 @@ func udpdateLoop() {
 
 			for over := false; !over; {
 				over = update(thrust)
-				time.Sleep(time.Duration(1 * time.Microsecond))
+				// time.Sleep(time.Duration(1 * time.Microsecond))
 			}
 
 			// log("Done map ", fmt.Sprintf("map %d in %d steps", checkpointsMapIndex, thisMapSteps))
 		}
 		log("End all maps", fmt.Sprintf("took %d steps with thrust %d", totalSteps, thrust))
 	}
+	os.Exit(0)
 }
 
 func update(thrust int) bool {
