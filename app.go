@@ -191,9 +191,16 @@ func assert(v float64, v2 float64) {
 	}
 }
 
+func normalVectorFromAngle(a float64) Vector {
+	return Vector{
+		x: math.Cos(a),
+		y: math.Sin(a),
+	}
+}
+
 func draw() {
 	// newMap = randomMap()
-	thrust := 200
+	thrust := 100
 
 	target := checkpointsMap[idxCheckpoint]
 
@@ -202,7 +209,13 @@ func draw() {
 		y: target.y - car.y,
 	}
 
-	acc := multVector(normalVector(toTargetVector), float64(thrust))
+	toTargetAngle := math.Atan2(toTargetVector.y, toTargetVector.x)
+
+	toTargetAngleRestricted := restrictAngle(toRadians(car.angle), toTargetAngle)
+
+	car.angle = toDegrees(toTargetAngleRestricted)
+
+	acc := multVector(normalVectorFromAngle(toTargetAngleRestricted), float64(thrust))
 	newSpeed := addVector(Vector{car.vx, car.vy}, acc)
 
 	car.vx = newSpeed.x
@@ -221,7 +234,6 @@ func draw() {
 	car.y = math.Trunc(car.y)
 
 	if dist(Coord{car.x, car.y}, target) < 600 {
-
 		if lap == 5 && idxCheckpoint == 0 {
 			lap = 0
 			idxCheckpoint = 0
