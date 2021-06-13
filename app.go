@@ -19,9 +19,10 @@ const CP_DIAMETER = 600 * 2
 const PADDING = 1000
 const MAX_ANGLE_DIFF_DEGREE = 18
 
-var checkpointsMap []Coord
+var checkpointsMapIndex int
 var car Car
 var idxCheckpoint = 0
+var allMaps [][]Coord
 
 var lap = 0
 
@@ -82,7 +83,14 @@ func setup() {
 	rand.Seed(time.Now().UnixNano())
 	p5.Canvas(MAP_WIDTH*SCALE, MAP_HEIGHT*SCALE)
 	p5.Background(color.Gray{Y: 220})
-	checkpointsMap = randomMap()
+
+	mapsPanelSize := 10
+
+	allMaps = make([][]Coord, 0, mapsPanelSize)
+	for i := 0; i < mapsPanelSize; i++ {
+		allMaps = append(allMaps, randomMap())
+	}
+
 	car = Car{
 		x:     float64(randInt(0+PADDING, MAP_WIDTH-PADDING)),
 		y:     float64(randInt(0+PADDING, MAP_HEIGHT-PADDING)),
@@ -202,7 +210,7 @@ func draw() {
 	// newMap = randomMap()
 	thrust := 100
 
-	target := checkpointsMap[idxCheckpoint]
+	target := allMaps[checkpointsMapIndex][idxCheckpoint]
 
 	toTargetVector := Vector{
 		x: target.x - car.x,
@@ -237,16 +245,16 @@ func draw() {
 		if lap == 5 && idxCheckpoint == 0 {
 			lap = 0
 			idxCheckpoint = 0
-			checkpointsMap = randomMap()
+			checkpointsMapIndex = checkpointsMapIndex + 1
 		} else {
 			if idxCheckpoint == 0 {
 				lap += 1
 			}
-			idxCheckpoint = (idxCheckpoint + 1) % len(checkpointsMap)
+			idxCheckpoint = (idxCheckpoint + 1) % len(allMaps[checkpointsMapIndex])
 		}
 	}
 
-	drawCheckpoints(checkpointsMap)
+	drawCheckpoints(allMaps[checkpointsMapIndex])
 	drawCar(car)
 }
 
