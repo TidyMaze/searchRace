@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/go-p5/p5"
@@ -23,6 +24,11 @@ var checkpointsMapIndex int
 var car Car
 var idxCheckpoint = 0
 var allMaps [][]Coord
+var totalSteps = 0
+
+var latestMapIndex int
+var latestCar Car
+var latestMutex sync.Mutex
 
 var lap = 0
 
@@ -98,6 +104,8 @@ func setup() {
 		vy:    0,
 		angle: 0,
 	}
+
+	go udpdateLoop()
 }
 
 func randInt(min int, max int) int {
@@ -206,7 +214,15 @@ func normalVectorFromAngle(a float64) Vector {
 	}
 }
 
-func draw() {
+func udpdateLoop() {
+	for checkpointsMapIndex < len(allMaps) {
+		update()
+		totalSteps += 1
+	}
+	log("took", totalSteps)
+}
+
+func update() {
 	// newMap = randomMap()
 	thrust := 100
 
@@ -253,8 +269,12 @@ func draw() {
 			idxCheckpoint = (idxCheckpoint + 1) % len(allMaps[checkpointsMapIndex])
 		}
 	}
+}
 
-	drawCheckpoints(allMaps[checkpointsMapIndex])
+func draw() {
+	if checkpointsMapIndex < len(allMaps) {
+		drawCheckpoints(allMaps[checkpointsMapIndex])
+	}
 	drawCar(car)
 }
 
