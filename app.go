@@ -214,6 +214,7 @@ func udpdateLoop() {
 
 		for over := false; !over; {
 			over = update(100)
+			time.Sleep(time.Duration(10 * time.Millisecond))
 		}
 
 		lap = 0
