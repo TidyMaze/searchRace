@@ -277,7 +277,7 @@ func searchCarParams() {
 
 			log("End all maps", fmt.Sprintf("took %d steps with hyperparams %+v - best is %+v (%d) - %d", totalSteps, carParams, bestParams, bestParamsScore, cnt))
 
-			if cnt > 0 {
+			if (cnt%10 == 0) && cnt > 0 {
 				dMinFastThrust := math.Abs(float64(bestParams.fastThrust) - float64(minFastThrust))
 				dMaxFastThrust := math.Abs(float64(bestParams.fastThrust) - float64(maxFastThrust))
 				dMinSlowThrust := math.Abs(float64(bestParams.slowThrust) - float64(minSlowThrust))
