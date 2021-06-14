@@ -221,10 +221,10 @@ func normalVectorFromAngle(a float64) Vector {
 
 func searchCarParams() {
 
-	for fastThrust := 10; fastThrust <= 200; fastThrust += 1 {
-		for slowThrust := 10; slowThrust <= 200; slowThrust += 1 {
+	for fastThrust := 10; fastThrust <= 200; fastThrust += 5 {
+		for slowThrust := 10; slowThrust <= 200; slowThrust += 5 {
 			if slowThrust <= fastThrust {
-				for maxAngle := 1; maxAngle <= 180; maxAngle += 1 {
+				for maxAngle := 1; maxAngle <= 180; maxAngle += 5 {
 					carParams := CarParameters{
 						fastThrust: fastThrust,
 						slowThrust: slowThrust,
