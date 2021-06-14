@@ -19,7 +19,7 @@ const CP_RADIUS = 600
 const CP_DIAMETER = CP_RADIUS * 2
 const PADDING = 1000
 const MAX_ANGLE_DIFF_DEGREE = 18
-const MAPS_PANEL_SIZE = 100
+const MAPS_PANEL_SIZE = 30
 const FAST_SIM = true
 const MAX_LAP = 5
 
@@ -262,7 +262,7 @@ func searchCarParams() {
 					over = update(carParams)
 
 					if !FAST_SIM {
-						waitTime := 1000 * time.Microsecond
+						waitTime := 10000 * time.Microsecond
 						time.Sleep(time.Duration(waitTime))
 					}
 				}
@@ -360,7 +360,7 @@ func update(carParams CarParameters) bool {
 
 	dTarget := dist(Coord{car.x, car.y}, target)
 
-	if (dTarget <= CP_RADIUS && lap == MAX_LAP && idxCheckpoint == 0) || thisMapSteps > 10000 {
+	if (dTarget <= CP_RADIUS && lap == MAX_LAP && idxCheckpoint == 0) || thisMapSteps > 1000 {
 		return true
 	} else if dTarget <= CP_RADIUS {
 		if idxCheckpoint == 0 {
