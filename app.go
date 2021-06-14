@@ -224,7 +224,7 @@ func udpdateLoop() {
 			thisMapSteps = 0
 
 			for over := false; !over; {
-				over = update(thrust)
+				over = update(200, 80, 10)
 
 				if !FAST_SIM {
 					waitTime := 10 * time.Millisecond
@@ -265,18 +265,20 @@ func applyAction(car Car, angle float64, thrust int) Car {
 	return car
 }
 
-func update(thrust int) bool {
+func update(fastThrust int, slowThrust int, maxAngle int) bool {
 
 	target := allMaps[checkpointsMapIndex][idxCheckpoint]
 
+	outputThrust, targetCoord := heuristic(fastThrust, slowThrust, maxAngle, allMaps[checkpointsMapIndex], idxCheckpoint, car)
+
 	toTargetVector := Vector{
-		x: target.x - car.x,
-		y: target.y - car.y,
+		x: targetCoord.x - car.x,
+		y: targetCoord.y - car.y,
 	}
 
 	toTargetAngle := math.Atan2(toTargetVector.y, toTargetVector.x)
 
-	car = applyAction(car, toTargetAngle, thrust)
+	car = applyAction(car, toTargetAngle, outputThrust)
 
 	thisMapSteps += 1
 	totalSteps += 1
@@ -304,7 +306,7 @@ func draw() {
 func heuristic(fastThrust int, slowThrust int, maxAngle int, checkpoints []Coord, checkpointIndex int, currentCar Car) (int, Coord) {
 	targetCheckpoint := checkpoints[checkpointIndex]
 
-	log("target", targetCheckpoint)
+	// log("target", targetCheckpoint)
 
 	angleCarTarget := math.Atan2(targetCheckpoint.y-float64(car.y), targetCheckpoint.x-float64(car.x))
 
@@ -312,9 +314,9 @@ func heuristic(fastThrust int, slowThrust int, maxAngle int, checkpoints []Coord
 
 	diffAngleCarTarget := diffAngle(angleCarVelocity, angleCarTarget)
 
-	log("angleCarTarget", toDegrees(angleCarTarget))
-	log("angleCarVelocity", toDegrees(angleCarVelocity))
-	log("diffAngleCarTarget", toDegrees(diffAngleCarTarget))
+	// log("angleCarTarget", toDegrees(angleCarTarget))
+	// log("angleCarVelocity", toDegrees(angleCarVelocity))
+	// log("diffAngleCarTarget", toDegrees(diffAngleCarTarget))
 
 	thrust := fastThrust
 	if toDegrees(math.Abs(diffAngleCarTarget)) > float64(maxAngle) {
