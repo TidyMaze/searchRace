@@ -15,7 +15,8 @@ import (
 const MAP_WIDTH = 16000
 const MAP_HEIGHT = 9000
 const SCALE = 0.1
-const CP_DIAMETER = 600 * 2
+const CP_RADIUS = 600
+const CP_DIAMETER = CP_RADIUS * 2
 const PADDING = 1000
 const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 100
@@ -350,9 +351,11 @@ func update(carParams CarParameters) bool {
 	thisMapSteps += 1
 	totalSteps += 1
 
-	if (dist(Coord{car.x, car.y}, target) < 600 && lap == MAX_LAP && idxCheckpoint == 0) || thisMapSteps > 10000 {
+	dTarget := dist(Coord{car.x, car.y}, target)
+
+	if (dTarget <= CP_RADIUS && lap == MAX_LAP && idxCheckpoint == 0) || thisMapSteps > 10000 {
 		return true
-	} else if dist(Coord{car.x, car.y}, target) < 600 {
+	} else if dTarget <= CP_RADIUS {
 		if idxCheckpoint == 0 {
 			lap += 1
 		}
