@@ -225,6 +225,7 @@ func normalVectorFromAngle(a float64) Vector {
 func searchCarParams() {
 	// best is {fastThrust:160 slowThrust:75 maxAngle:60} (73963)
 	// best is {fastThrust:166 slowThrust:81 maxAngle:60} (78413)
+	// best is {fastThrust:165 slowThrust:81 maxAngle:58} (76630)
 
 	for fastThrust := 150; fastThrust <= 180; fastThrust += 1 {
 		for slowThrust := 65; slowThrust <= 85; slowThrust += 1 {
