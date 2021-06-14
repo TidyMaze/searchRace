@@ -359,7 +359,7 @@ func update(carParams CarParameters) bool {
 
 	dTarget := dist(Coord{car.x, car.y}, target)
 
-	if (dTarget <= CP_RADIUS && lap == MAX_LAP && idxCheckpoint == 0) || thisMapSteps > 1000 {
+	if (dTarget <= CP_RADIUS && lap == MAX_LAP && idxCheckpoint == 0) || thisMapSteps > 600 {
 		return true
 	} else if dTarget <= CP_RADIUS {
 		if idxCheckpoint == 0 {
