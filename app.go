@@ -19,6 +19,7 @@ const CP_DIAMETER = 600 * 2
 const PADDING = 1000
 const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 100
+const FAST_SIM = true
 
 var checkpointsMapIndex int
 var car Car
@@ -82,6 +83,16 @@ func clampAngle(a float64, minA float64, maxA float64) float64 {
 	}
 }
 
+func initCar() {
+	car = Car{
+		x:     float64(randInt(0+PADDING, MAP_WIDTH-PADDING)),
+		y:     float64(randInt(0+PADDING, MAP_HEIGHT-PADDING)),
+		vx:    0,
+		vy:    0,
+		angle: 0,
+	}
+}
+
 func setup() {
 	rand.Seed(time.Now().UnixNano())
 	p5.Canvas(MAP_WIDTH*SCALE, MAP_HEIGHT*SCALE)
@@ -90,14 +101,6 @@ func setup() {
 	allMaps = make([][]Coord, 0, MAPS_PANEL_SIZE)
 	for i := 0; i < MAPS_PANEL_SIZE; i++ {
 		allMaps = append(allMaps, randomMap())
-	}
-
-	car = Car{
-		x:     float64(randInt(0+PADDING, MAP_WIDTH-PADDING)),
-		y:     float64(randInt(0+PADDING, MAP_HEIGHT-PADDING)),
-		vx:    0,
-		vy:    0,
-		angle: 0,
 	}
 
 	go udpdateLoop()
@@ -211,7 +214,8 @@ func normalVectorFromAngle(a float64) Vector {
 
 func udpdateLoop() {
 
-	for thrust := 10; thrust < 200; thrust += 1 {
+	for thrust := 60; thrust < 120; thrust += 1 {
+		initCar()
 		totalSteps = 0
 		for checkpointsMapIndex = 0; checkpointsMapIndex < len(allMaps); checkpointsMapIndex += 1 {
 
@@ -221,7 +225,11 @@ func udpdateLoop() {
 
 			for over := false; !over; {
 				over = update(thrust)
-				time.Sleep(time.Duration(500 * time.Nanosecond))
+				waitTime := 10 * time.Millisecond
+				if FAST_SIM {
+					waitTime = 10 * time.Microsecond
+				}
+				time.Sleep(time.Duration(waitTime))
 			}
 
 			// log("Done map ", fmt.Sprintf("map %d in %d steps", checkpointsMapIndex, thisMapSteps))
