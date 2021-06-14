@@ -19,7 +19,7 @@ const CP_DIAMETER = 600 * 2
 const PADDING = 1000
 const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 100
-const FAST_SIM = true
+const FAST_SIM = false
 
 var checkpointsMapIndex int
 var car Car
@@ -295,6 +295,29 @@ func draw() {
 	drawCar(car)
 }
 
+func heuristic(fastThrust int, slowThrust int, maxAngle int, checkpoints []Coord, checkpointIndex int, currentCar Car) (int, Coord) {
+	targetCheckpoint := checkpoints[checkpointIndex]
+
+	log("target", targetCheckpoint)
+
+	angleCarTarget := math.Atan2(targetCheckpoint.y-float64(car.y), targetCheckpoint.x-float64(car.x))
+
+	angleCarVelocity := math.Atan2(float64(car.vy), float64(car.vx))
+
+	diffAngleCarTarget := diffAngle(angleCarVelocity, angleCarTarget)
+
+	log("angleCarTarget", toDegrees(angleCarTarget))
+	log("angleCarVelocity", toDegrees(angleCarVelocity))
+	log("diffAngleCarTarget", toDegrees(diffAngleCarTarget))
+
+	thrust := fastThrust
+	if toDegrees(math.Abs(diffAngleCarTarget)) > float64(maxAngle) {
+		thrust = slowThrust
+	}
+
+	return thrust, targetCheckpoint
+}
+
 func mainCG() {
 	// checkpoints: Count of checkpoints to read
 	var checkpoints int
@@ -319,24 +342,15 @@ func mainCG() {
 		var checkpointIndex, x, y, vx, vy, angle int
 		fmt.Scan(&checkpointIndex, &x, &y, &vx, &vy, &angle)
 
-		targetCheckpoint := checkpointsList[checkpointIndex]
-
-		log("target", targetCheckpoint)
-
-		angleCarTarget := math.Atan2(targetCheckpoint.y-float64(y), targetCheckpoint.x-float64(x))
-
-		angleCarVelocity := math.Atan2(float64(vy), float64(vx))
-
-		diffAngleCarTarget := diffAngle(angleCarVelocity, angleCarTarget)
-
-		log("angleCarTarget", toDegrees(angleCarTarget))
-		log("angleCarVelocity", toDegrees(angleCarVelocity))
-		log("diffAngleCarTarget", toDegrees(diffAngleCarTarget))
-
-		thrust := 200
-		if toDegrees(math.Abs(diffAngleCarTarget)) > 10 {
-			thrust = 80
+		currentCar := Car{
+			vx:    float64(vx),
+			vy:    float64(vy),
+			x:     float64(x),
+			y:     float64(y),
+			angle: float64(angle),
 		}
+
+		thrust, targetCheckpoint := heuristic(200, 80, 10, checkpointsList, checkpointIndex, currentCar)
 
 		// fmt.Fprintln(os.Stderr, "Debug messages...")
 		fmt.Printf("%d %d %d message\n", int(targetCheckpoint.x), int(targetCheckpoint.y), thrust)
