@@ -239,18 +239,8 @@ func udpdateLoop() {
 	os.Exit(0)
 }
 
-func update(thrust int) bool {
-
-	target := allMaps[checkpointsMapIndex][idxCheckpoint]
-
-	toTargetVector := Vector{
-		x: target.x - car.x,
-		y: target.y - car.y,
-	}
-
-	toTargetAngle := math.Atan2(toTargetVector.y, toTargetVector.x)
-
-	toTargetAngleRestricted := restrictAngle(toRadians(car.angle), toTargetAngle)
+func applyAction(car Car, angle float64, thrust int) Car {
+	toTargetAngleRestricted := restrictAngle(toRadians(car.angle), angle)
 
 	car.angle = toDegrees(toTargetAngleRestricted)
 
@@ -271,6 +261,22 @@ func update(thrust int) bool {
 
 	car.x = math.Trunc(car.x)
 	car.y = math.Trunc(car.y)
+
+	return car
+}
+
+func update(thrust int) bool {
+
+	target := allMaps[checkpointsMapIndex][idxCheckpoint]
+
+	toTargetVector := Vector{
+		x: target.x - car.x,
+		y: target.y - car.y,
+	}
+
+	toTargetAngle := math.Atan2(toTargetVector.y, toTargetVector.x)
+
+	car = applyAction(car, toTargetAngle, thrust)
 
 	thisMapSteps += 1
 	totalSteps += 1
