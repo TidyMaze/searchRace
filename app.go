@@ -227,42 +227,78 @@ func searchCarParams() {
 	// best is {fastThrust:166 slowThrust:81 maxAngle:60} (78413)
 	// best is {fastThrust:165 slowThrust:81 maxAngle:58} (76630)
 
-	for fastThrust := 150; fastThrust <= 180; fastThrust += 1 {
-		for slowThrust := 65; slowThrust <= 85; slowThrust += 1 {
-			if slowThrust <= fastThrust {
-				for maxAngle := 40; maxAngle <= 80; maxAngle += 1 {
-					carParams := CarParameters{
-						fastThrust: fastThrust,
-						slowThrust: slowThrust,
-						maxAngle:   maxAngle,
+	cnt := 0
+
+	minFastThrust := 10
+	maxFastThrust := 200
+	minSlowThrust := 10
+	maxSlowThrust := 200
+	minMaxAngle := 0
+	maxMaxAngle := 180
+
+	for cnt < 10000 {
+		fastThrust := randInt(minFastThrust, maxFastThrust)
+		slowThrust := randInt(minSlowThrust, maxSlowThrust)
+		maxAngle := randInt(minMaxAngle, maxMaxAngle)
+
+		if slowThrust <= fastThrust {
+			cnt += 1
+			carParams := CarParameters{
+				fastThrust: fastThrust,
+				slowThrust: slowThrust,
+				maxAngle:   maxAngle,
+			}
+
+			initCar()
+			totalSteps = 0
+			for checkpointsMapIndex = 0; checkpointsMapIndex < len(allMaps); checkpointsMapIndex += 1 {
+
+				lap = 0
+				idxCheckpoint = 0
+				thisMapSteps = 0
+
+				for over := false; !over; {
+					over = update(carParams)
+
+					if !FAST_SIM {
+						waitTime := 1000 * time.Microsecond
+						time.Sleep(time.Duration(waitTime))
 					}
+				}
 
-					initCar()
-					totalSteps = 0
-					for checkpointsMapIndex = 0; checkpointsMapIndex < len(allMaps); checkpointsMapIndex += 1 {
+				// log("Done map ", fmt.Sprintf("map %d in %d steps", checkpointsMapIndex, thisMapSteps))
+			}
 
-						lap = 0
-						idxCheckpoint = 0
-						thisMapSteps = 0
+			if totalSteps < bestParamsScore {
+				bestParamsScore = totalSteps
+				bestParams = carParams
+			}
 
-						for over := false; !over; {
-							over = update(carParams)
+			log("End all maps", fmt.Sprintf("took %d steps with hyperparams %+v - best is %+v (%d) - %d", totalSteps, carParams, bestParams, bestParamsScore, cnt))
 
-							if !FAST_SIM {
-								waitTime := 1000 * time.Microsecond
-								time.Sleep(time.Duration(waitTime))
-							}
-						}
+			if (cnt%10) == 0 && cnt > 0 {
+				if bestParams.fastThrust > minFastThrust+1 {
+					minFastThrust += 1
+				}
 
-						// log("Done map ", fmt.Sprintf("map %d in %d steps", checkpointsMapIndex, thisMapSteps))
-					}
+				if bestParams.fastThrust < maxFastThrust-1 {
+					maxFastThrust -= 1
+				}
 
-					if totalSteps < bestParamsScore {
-						bestParamsScore = totalSteps
-						bestParams = carParams
-					}
+				if bestParams.slowThrust > minSlowThrust+1 {
+					minSlowThrust += 1
+				}
 
-					log("End all maps", fmt.Sprintf("took %d steps with hyperparams %+v - best is %+v (%d)", totalSteps, carParams, bestParams, bestParamsScore))
+				if bestParams.slowThrust < maxSlowThrust-1 {
+					maxSlowThrust -= 1
+				}
+
+				if bestParams.maxAngle > minMaxAngle+1 {
+					minMaxAngle += 1
+				}
+
+				if bestParams.maxAngle < maxMaxAngle-1 {
+					maxMaxAngle -= 1
 				}
 			}
 		}
