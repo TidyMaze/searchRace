@@ -278,27 +278,34 @@ func searchCarParams() {
 			log("End all maps", fmt.Sprintf("took %d steps with hyperparams %+v - best is %+v (%d) - %d", totalSteps, carParams, bestParams, bestParamsScore, cnt))
 
 			if (cnt%10) == 0 && cnt > 0 {
-				if bestParams.fastThrust > minFastThrust+1 {
+				dMinFastThrust := math.Abs(float64(bestParams.fastThrust) - float64(minFastThrust))
+				dMaxFastThrust := math.Abs(float64(bestParams.fastThrust) - float64(maxFastThrust))
+				dMinSlowThrust := math.Abs(float64(bestParams.slowThrust) - float64(minSlowThrust))
+				dMaxSlowThrust := math.Abs(float64(bestParams.slowThrust) - float64(maxSlowThrust))
+				dMinMaxAngle := math.Abs(float64(bestParams.maxAngle) - float64(minMaxAngle))
+				dMaxMaxAngle := math.Abs(float64(bestParams.maxAngle) - float64(maxMaxAngle))
+
+				if bestParams.fastThrust > minFastThrust+1 && dMinFastThrust > dMaxFastThrust {
 					minFastThrust += 1
 				}
 
-				if bestParams.fastThrust < maxFastThrust-1 {
+				if bestParams.fastThrust < maxFastThrust-1 && dMaxFastThrust > dMinFastThrust {
 					maxFastThrust -= 1
 				}
 
-				if bestParams.slowThrust > minSlowThrust+1 {
+				if bestParams.slowThrust > minSlowThrust+1 && dMinSlowThrust > dMaxSlowThrust {
 					minSlowThrust += 1
 				}
 
-				if bestParams.slowThrust < maxSlowThrust-1 {
+				if bestParams.slowThrust < maxSlowThrust-1 && dMaxSlowThrust > dMinSlowThrust {
 					maxSlowThrust -= 1
 				}
 
-				if bestParams.maxAngle > minMaxAngle+1 {
+				if bestParams.maxAngle > minMaxAngle+1 && dMinMaxAngle > dMaxMaxAngle {
 					minMaxAngle += 1
 				}
 
-				if bestParams.maxAngle < maxMaxAngle-1 {
+				if bestParams.maxAngle < maxMaxAngle-1 && dMaxMaxAngle > dMinMaxAngle {
 					maxMaxAngle -= 1
 				}
 			}
