@@ -19,7 +19,7 @@ const CP_DIAMETER = 600 * 2
 const PADDING = 1000
 const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 100
-const FAST_SIM = false
+const FAST_SIM = true
 
 var checkpointsMapIndex int
 var car Car
@@ -42,6 +42,12 @@ type Coord struct {
 
 type Vector struct {
 	x, y float64
+}
+
+type CarParameters struct {
+	fastThrust int
+	slowThrust int
+	maxAngle   int
 }
 
 func log(msg string, v interface{}) {
@@ -215,6 +221,12 @@ func normalVectorFromAngle(a float64) Vector {
 func udpdateLoop() {
 
 	for thrust := 60; thrust < 120; thrust += 1 {
+		carParams := CarParameters{
+			fastThrust: 200,
+			slowThrust: 80,
+			maxAngle:   10,
+		}
+
 		initCar()
 		totalSteps = 0
 		for checkpointsMapIndex = 0; checkpointsMapIndex < len(allMaps); checkpointsMapIndex += 1 {
@@ -224,7 +236,7 @@ func udpdateLoop() {
 			thisMapSteps = 0
 
 			for over := false; !over; {
-				over = update(200, 80, 10)
+				over = update(carParams)
 
 				if !FAST_SIM {
 					waitTime := 10 * time.Millisecond
@@ -234,7 +246,7 @@ func udpdateLoop() {
 
 			// log("Done map ", fmt.Sprintf("map %d in %d steps", checkpointsMapIndex, thisMapSteps))
 		}
-		log("End all maps", fmt.Sprintf("took %d steps with thrust %d", totalSteps, thrust))
+		log("End all maps", fmt.Sprintf("took %d steps with hyperparams %+v", totalSteps, carParams))
 	}
 	os.Exit(0)
 }
@@ -265,11 +277,11 @@ func applyAction(car Car, angle float64, thrust int) Car {
 	return car
 }
 
-func update(fastThrust int, slowThrust int, maxAngle int) bool {
+func update(carParams CarParameters) bool {
 
 	target := allMaps[checkpointsMapIndex][idxCheckpoint]
 
-	outputThrust, targetCoord := heuristic(fastThrust, slowThrust, maxAngle, allMaps[checkpointsMapIndex], idxCheckpoint, car)
+	outputThrust, targetCoord := heuristic(carParams, allMaps[checkpointsMapIndex], idxCheckpoint, car)
 
 	toTargetVector := Vector{
 		x: targetCoord.x - car.x,
@@ -303,7 +315,7 @@ func draw() {
 	drawCar(car)
 }
 
-func heuristic(fastThrust int, slowThrust int, maxAngle int, checkpoints []Coord, checkpointIndex int, currentCar Car) (int, Coord) {
+func heuristic(carParams CarParameters, checkpoints []Coord, checkpointIndex int, currentCar Car) (int, Coord) {
 	targetCheckpoint := checkpoints[checkpointIndex]
 
 	// log("target", targetCheckpoint)
@@ -318,10 +330,12 @@ func heuristic(fastThrust int, slowThrust int, maxAngle int, checkpoints []Coord
 	// log("angleCarVelocity", toDegrees(angleCarVelocity))
 	// log("diffAngleCarTarget", toDegrees(diffAngleCarTarget))
 
-	thrust := fastThrust
-	if toDegrees(math.Abs(diffAngleCarTarget)) > float64(maxAngle) {
-		thrust = slowThrust
+	thrust := carParams.fastThrust
+	if toDegrees(math.Abs(diffAngleCarTarget)) > float64(carParams.maxAngle) {
+		thrust = carParams.slowThrust
 	}
+
+	// log("Turn", fmt.Sprintf("Thrust %d target %v", thrust, targetCheckpoint))
 
 	return thrust, targetCheckpoint
 }
@@ -358,7 +372,7 @@ func mainCG() {
 			angle: float64(angle),
 		}
 
-		thrust, targetCheckpoint := heuristic(200, 80, 10, checkpointsList, checkpointIndex, currentCar)
+		thrust, targetCheckpoint := heuristic(CarParameters{200, 80, 10}, checkpointsList, checkpointIndex, currentCar)
 
 		// fmt.Fprintln(os.Stderr, "Debug messages...")
 		fmt.Printf("%d %d %d message\n", int(targetCheckpoint.x), int(targetCheckpoint.y), thrust)
