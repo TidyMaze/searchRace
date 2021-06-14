@@ -21,7 +21,7 @@ const PADDING = 1000
 const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 30
 const FAST_SIM = true
-const MAX_LAP = 5
+const MAX_LAP = 3
 
 var checkpointsMapIndex int
 var car Car
@@ -136,7 +136,7 @@ func oneCPIsTooClose(cps []Coord, c Coord) bool {
 }
 
 func randomMap() []Coord {
-	cpCount := randInt(5, 10)
+	cpCount := randInt(3, 9)
 	res := make([]Coord, 0, cpCount)
 	for iCheckpoint := 0; iCheckpoint < cpCount; iCheckpoint++ {
 
@@ -273,9 +273,8 @@ func searchCarParams() {
 			if totalSteps < bestParamsScore {
 				bestParamsScore = totalSteps
 				bestParams = carParams
+				log("End all maps", fmt.Sprintf("took %d steps, params %+v - best is %+v (%d) - %d", totalSteps, carParams, bestParams, bestParamsScore, cnt))
 			}
-
-			log("End all maps", fmt.Sprintf("took %d steps, params %+v - best is %+v (%d) - %d", totalSteps, carParams, bestParams, bestParamsScore, cnt))
 
 			if (cnt%10 == 0) && cnt > 0 {
 				dMinFastThrust := math.Abs(float64(bestParams.fastThrust) - float64(minFastThrust))
