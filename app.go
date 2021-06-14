@@ -19,7 +19,7 @@ const CP_DIAMETER = 600 * 2
 const PADDING = 1000
 const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 100
-const FAST_SIM = true
+const FAST_SIM = false
 
 var checkpointsMapIndex int
 var car Car
@@ -109,7 +109,7 @@ func setup() {
 		allMaps = append(allMaps, randomMap())
 	}
 
-	go udpdateLoop()
+	go searchCarParams()
 }
 
 func randInt(min int, max int) int {
@@ -218,35 +218,39 @@ func normalVectorFromAngle(a float64) Vector {
 	}
 }
 
-func udpdateLoop() {
+func searchCarParams() {
 
-	for thrust := 60; thrust < 120; thrust += 1 {
-		carParams := CarParameters{
-			fastThrust: 200,
-			slowThrust: 80,
-			maxAngle:   10,
-		}
-
-		initCar()
-		totalSteps = 0
-		for checkpointsMapIndex = 0; checkpointsMapIndex < len(allMaps); checkpointsMapIndex += 1 {
-
-			lap = 0
-			idxCheckpoint = 0
-			thisMapSteps = 0
-
-			for over := false; !over; {
-				over = update(carParams)
-
-				if !FAST_SIM {
-					waitTime := 10 * time.Millisecond
-					time.Sleep(time.Duration(waitTime))
+	for fastThrust := 10; fastThrust <= 200; fastThrust += 1 {
+		for slowThrust := 10; slowThrust <= 200; slowThrust += 1 {
+			for maxAngle := 1; maxAngle <= 180; maxAngle += 1 {
+				carParams := CarParameters{
+					fastThrust: fastThrust,
+					slowThrust: slowThrust,
+					maxAngle:   maxAngle,
 				}
-			}
 
-			// log("Done map ", fmt.Sprintf("map %d in %d steps", checkpointsMapIndex, thisMapSteps))
+				initCar()
+				totalSteps = 0
+				for checkpointsMapIndex = 0; checkpointsMapIndex < len(allMaps); checkpointsMapIndex += 1 {
+
+					lap = 0
+					idxCheckpoint = 0
+					thisMapSteps = 0
+
+					for over := false; !over; {
+						over = update(carParams)
+
+						if !FAST_SIM {
+							waitTime := 1 * time.Millisecond
+							time.Sleep(time.Duration(waitTime))
+						}
+					}
+
+					// log("Done map ", fmt.Sprintf("map %d in %d steps", checkpointsMapIndex, thisMapSteps))
+				}
+				log("End all maps", fmt.Sprintf("took %d steps with hyperparams %+v", totalSteps, carParams))
+			}
 		}
-		log("End all maps", fmt.Sprintf("took %d steps with hyperparams %+v", totalSteps, carParams))
 	}
 	os.Exit(0)
 }
