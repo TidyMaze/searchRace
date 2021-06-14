@@ -20,6 +20,7 @@ const PADDING = 1000
 const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 100
 const FAST_SIM = false
+const MAX_LAP = 5
 
 var checkpointsMapIndex int
 var car Car
@@ -299,7 +300,7 @@ func update(carParams CarParameters) bool {
 	thisMapSteps += 1
 	totalSteps += 1
 
-	if (dist(Coord{car.x, car.y}, target) < 600 && lap == 5 && idxCheckpoint == 0) || thisMapSteps > 10000 {
+	if (dist(Coord{car.x, car.y}, target) < 600 && lap == MAX_LAP && idxCheckpoint == 0) || thisMapSteps > 10000 {
 		return true
 	} else if dist(Coord{car.x, car.y}, target) < 600 {
 		if idxCheckpoint == 0 {
@@ -312,11 +313,16 @@ func update(carParams CarParameters) bool {
 	}
 }
 
+func drawStats() {
+	p5.Text(fmt.Sprintf("totalStep %d\nstep %d\nmap %d/%d\nlap %d/%d", totalSteps, thisMapSteps, checkpointsMapIndex+1, MAPS_PANEL_SIZE, lap, MAX_LAP), 10, 50)
+}
+
 func draw() {
 	if checkpointsMapIndex < len(allMaps) {
 		drawCheckpoints(allMaps[checkpointsMapIndex])
 	}
 	drawCar(car)
+	drawStats()
 }
 
 func heuristic(carParams CarParameters, checkpoints []Coord, checkpointIndex int, currentCar Car) (int, Coord) {
