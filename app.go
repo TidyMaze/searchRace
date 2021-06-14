@@ -19,7 +19,7 @@ const CP_DIAMETER = 600 * 2
 const PADDING = 1000
 const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 100
-const FAST_SIM = false
+const FAST_SIM = true
 const MAX_LAP = 5
 
 var checkpointsMapIndex int
@@ -223,33 +223,35 @@ func searchCarParams() {
 
 	for fastThrust := 10; fastThrust <= 200; fastThrust += 1 {
 		for slowThrust := 10; slowThrust <= 200; slowThrust += 1 {
-			for maxAngle := 1; maxAngle <= 180; maxAngle += 1 {
-				carParams := CarParameters{
-					fastThrust: fastThrust,
-					slowThrust: slowThrust,
-					maxAngle:   maxAngle,
-				}
-
-				initCar()
-				totalSteps = 0
-				for checkpointsMapIndex = 0; checkpointsMapIndex < len(allMaps); checkpointsMapIndex += 1 {
-
-					lap = 0
-					idxCheckpoint = 0
-					thisMapSteps = 0
-
-					for over := false; !over; {
-						over = update(carParams)
-
-						if !FAST_SIM {
-							waitTime := 1000 * time.Microsecond
-							time.Sleep(time.Duration(waitTime))
-						}
+			if slowThrust <= fastThrust {
+				for maxAngle := 1; maxAngle <= 180; maxAngle += 1 {
+					carParams := CarParameters{
+						fastThrust: fastThrust,
+						slowThrust: slowThrust,
+						maxAngle:   maxAngle,
 					}
 
-					// log("Done map ", fmt.Sprintf("map %d in %d steps", checkpointsMapIndex, thisMapSteps))
+					initCar()
+					totalSteps = 0
+					for checkpointsMapIndex = 0; checkpointsMapIndex < len(allMaps); checkpointsMapIndex += 1 {
+
+						lap = 0
+						idxCheckpoint = 0
+						thisMapSteps = 0
+
+						for over := false; !over; {
+							over = update(carParams)
+
+							if !FAST_SIM {
+								waitTime := 1000 * time.Microsecond
+								time.Sleep(time.Duration(waitTime))
+							}
+						}
+
+						// log("Done map ", fmt.Sprintf("map %d in %d steps", checkpointsMapIndex, thisMapSteps))
+					}
+					log("End all maps", fmt.Sprintf("took %d steps with hyperparams %+v", totalSteps, carParams))
 				}
-				log("End all maps", fmt.Sprintf("took %d steps with hyperparams %+v", totalSteps, carParams))
 			}
 		}
 	}
