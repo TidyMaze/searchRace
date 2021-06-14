@@ -31,6 +31,9 @@ var totalSteps = 0
 
 var lap = 0
 
+var bestParams = CarParameters{}
+var bestParamsScore = 1000000000
+
 type Car struct {
 	x, y   float64
 	vx, vy float64
@@ -250,7 +253,13 @@ func searchCarParams() {
 
 						// log("Done map ", fmt.Sprintf("map %d in %d steps", checkpointsMapIndex, thisMapSteps))
 					}
-					log("End all maps", fmt.Sprintf("took %d steps with hyperparams %+v", totalSteps, carParams))
+
+					if totalSteps < bestParamsScore {
+						bestParamsScore = totalSteps
+						bestParams = carParams
+					}
+
+					log("End all maps", fmt.Sprintf("took %d steps with hyperparams %+v - best is %+v (%d)", totalSteps, carParams, bestParams, bestParamsScore))
 				}
 			}
 		}
