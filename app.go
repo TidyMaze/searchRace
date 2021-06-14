@@ -390,9 +390,9 @@ func heuristic(carParams CarParameters, checkpoints []Coord, checkpointIndex int
 
 	// log("target", targetCheckpoint)
 
-	angleCarTarget := math.Atan2(targetCheckpoint.y-float64(car.y), targetCheckpoint.x-float64(car.x))
+	angleCarTarget := math.Atan2(targetCheckpoint.y-float64(currentCar.y), targetCheckpoint.x-float64(currentCar.x))
 
-	angleCarVelocity := math.Atan2(float64(car.vy), float64(car.vx))
+	angleCarVelocity := math.Atan2(float64(currentCar.vy), float64(currentCar.vx))
 
 	diffAngleCarTarget := diffAngle(angleCarVelocity, angleCarTarget)
 
@@ -442,7 +442,7 @@ func mainCG() {
 			angle: float64(angle),
 		}
 
-		thrust, targetCheckpoint := heuristic(CarParameters{200, 80, 10}, checkpointsList, checkpointIndex, currentCar)
+		thrust, targetCheckpoint := heuristic(CarParameters{170, 76, 76}, checkpointsList, checkpointIndex, currentCar)
 
 		// fmt.Fprintln(os.Stderr, "Debug messages...")
 		fmt.Printf("%d %d %d message\n", int(targetCheckpoint.x), int(targetCheckpoint.y), thrust)
