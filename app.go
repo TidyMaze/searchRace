@@ -226,10 +226,10 @@ func searchCarParams() {
 	// best is {fastThrust:160 slowThrust:75 maxAngle:60} (73963)
 	// best is {fastThrust:166 slowThrust:81 maxAngle:60} (78413)
 
-	for fastThrust := 150; fastThrust <= 180; fastThrust += 2 {
-		for slowThrust := 65; slowThrust <= 85; slowThrust += 2 {
+	for fastThrust := 150; fastThrust <= 180; fastThrust += 1 {
+		for slowThrust := 65; slowThrust <= 85; slowThrust += 1 {
 			if slowThrust <= fastThrust {
-				for maxAngle := 40; maxAngle <= 80; maxAngle += 5 {
+				for maxAngle := 40; maxAngle <= 80; maxAngle += 1 {
 					carParams := CarParameters{
 						fastThrust: fastThrust,
 						slowThrust: slowThrust,
