@@ -242,7 +242,7 @@ func searchCarParams() {
 						over = update(carParams)
 
 						if !FAST_SIM {
-							waitTime := 1 * time.Millisecond
+							waitTime := 1000 * time.Microsecond
 							time.Sleep(time.Duration(waitTime))
 						}
 					}
