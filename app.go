@@ -20,7 +20,7 @@ const CP_DIAMETER = CP_RADIUS * 2
 const PADDING = 1000
 const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 30
-const FAST_SIM = true
+const FAST_SIM = false
 const MAX_LAP = 3
 
 var checkpointsMapIndex int
@@ -29,6 +29,13 @@ var idxCheckpoint = 0
 var allMaps [][]Coord
 var thisMapSteps = 0
 var totalSteps = 0
+
+var minFastThrust = 10
+var maxFastThrust = 200
+var minSlowThrust = 10
+var maxSlowThrust = 200
+var minMaxAngle = 0
+var maxMaxAngle = 180
 
 var lap = 0
 
@@ -106,7 +113,7 @@ func initCar() {
 
 func setup() {
 	rand.Seed(time.Now().UnixNano())
-	p5.Canvas(MAP_WIDTH*SCALE, MAP_HEIGHT*SCALE)
+	p5.Canvas(MAP_WIDTH*SCALE+500, MAP_HEIGHT*SCALE)
 	p5.Background(color.Gray{Y: 220})
 
 	allMaps = make([][]Coord, 0, MAPS_PANEL_SIZE)
@@ -230,13 +237,6 @@ func searchCarParams() {
 
 	cnt := 0
 
-	minFastThrust := 10
-	maxFastThrust := 200
-	minSlowThrust := 10
-	maxSlowThrust := 200
-	minMaxAngle := 0
-	maxMaxAngle := 180
-
 	for cnt < 10000 {
 		fastThrust := randInt(minFastThrust, maxFastThrust)
 		slowThrust := randInt(minSlowThrust, maxSlowThrust)
@@ -262,7 +262,7 @@ func searchCarParams() {
 					over = update(carParams)
 
 					if !FAST_SIM {
-						waitTime := 10000 * time.Microsecond
+						waitTime := 10 * time.Microsecond
 						time.Sleep(time.Duration(waitTime))
 					}
 				}
@@ -276,7 +276,7 @@ func searchCarParams() {
 				log("End all maps", fmt.Sprintf("took %d steps, params %+v - best is %+v (%d) - %d", totalSteps, carParams, bestParams, bestParamsScore, cnt))
 			}
 
-			if (cnt%10 == 0) && cnt > 0 {
+			if cnt > 0 {
 				dMinFastThrust := math.Abs(float64(bestParams.fastThrust) - float64(minFastThrust))
 				dMaxFastThrust := math.Abs(float64(bestParams.fastThrust) - float64(maxFastThrust))
 				dMinSlowThrust := math.Abs(float64(bestParams.slowThrust) - float64(minSlowThrust))
@@ -376,12 +376,18 @@ func drawStats() {
 	p5.Text(fmt.Sprintf("totalStep %d\nstep %d\nmap %d/%d\nlap %d/%d", totalSteps, thisMapSteps, checkpointsMapIndex+1, MAPS_PANEL_SIZE, lap, MAX_LAP), 10, 50)
 }
 
+func drawSearchSpace() {
+	p5.Fill(color.Transparent)
+	p5.Rect(float64(1600+minFastThrust), float64(100+minSlowThrust), float64(maxFastThrust)-float64(minFastThrust), float64(maxSlowThrust)-float64(minSlowThrust))
+}
+
 func draw() {
 	if checkpointsMapIndex < len(allMaps) {
 		drawCheckpoints(allMaps[checkpointsMapIndex])
 	}
 	drawCar(car)
 	drawStats()
+	drawSearchSpace()
 }
 
 func heuristic(carParams CarParameters, checkpoints []Coord, checkpointIndex int, currentCar Car) (int, Coord) {
