@@ -281,7 +281,7 @@ func searchCarParams() {
 					displayCar = state.car
 
 					if !fastSim {
-						waitTime := 8000 * time.Microsecond
+						waitTime := 10000 * time.Microsecond
 						time.Sleep(time.Duration(waitTime))
 					}
 				}
