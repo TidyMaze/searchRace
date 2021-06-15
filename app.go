@@ -26,6 +26,7 @@ const MAX_LAP = 3
 var displayCheckpointsMapIndex int
 var displayLap int
 var displayCheckpoints []Coord
+var displayTarget Coord
 
 var displayCar Car
 
@@ -280,7 +281,7 @@ func searchCarParams() {
 					displayCar = state.car
 
 					if !FAST_SIM {
-						waitTime := 5000 * time.Microsecond
+						waitTime := 8000 * time.Microsecond
 						time.Sleep(time.Duration(waitTime))
 					}
 				}
@@ -364,6 +365,10 @@ func update(carParams CarParameters, state State, checkpointsMapIndex int) (bool
 
 	outputThrust, targetCoord := heuristic(carParams, allMaps[checkpointsMapIndex], state.idxCheckpoint, state.car)
 
+	displayTarget = targetCoord
+
+	// log("output", fmt.Sprintf("Going to %+v at thrust %d", targetCoord, outputThrust))
+
 	toTargetVector := Vector{
 		x: targetCoord.x - state.car.x,
 		y: targetCoord.y - state.car.y,
@@ -401,11 +406,18 @@ func drawSearchSpace() {
 	p5.Rect(float64(1600+minFastThrust), float64(100+minSlowThrust), float64(maxFastThrust)-float64(minFastThrust), float64(maxSlowThrust)-float64(minSlowThrust))
 }
 
+func drawTarget(from Coord, to Coord) {
+	p5.Line(from.x*SCALE, from.y*SCALE, to.x*SCALE, to.y*SCALE)
+}
+
 func draw() {
 	if len(displayCheckpoints) > 0 {
 		drawCheckpoints(displayCheckpoints)
 	}
 	drawCar(displayCar)
+
+	drawTarget(Coord{displayCar.x, displayCar.y}, displayTarget)
+
 	drawStats(displayCheckpointsMapIndex, displayLap)
 	drawSearchSpace()
 }
