@@ -42,13 +42,10 @@ var maxSlowThrust = 200
 var minMaxAngle = 0
 var maxMaxAngle = 180
 
-var bestParams = CarParameters{}
-var bestParamsScore = 1000000000
-
 type Car struct {
-	x, y   float64
-	vx, vy float64
-	angle  float64
+	coord Coord
+	vel   Vector
+	angle float64
 }
 
 type Coord struct {
@@ -59,16 +56,21 @@ type Vector struct {
 	x, y float64
 }
 
-type CarParameters struct {
-	fastThrust int
-	slowThrust int
-	maxAngle   int
-}
-
 type State struct {
 	car           Car
 	idxCheckpoint int
 	lap           int
+}
+
+type Action struct {
+	thrust int
+	angle  int
+}
+
+type Trajectory struct {
+	history      []Action
+	currentState State
+	score        float64
 }
 
 func log(msg string, v interface{}) {
@@ -112,10 +114,14 @@ func clampAngle(a float64, minA float64, maxA float64) float64 {
 
 func initCar() Car {
 	return Car{
-		x:     float64(randInt(0+PADDING, MAP_WIDTH-PADDING)),
-		y:     float64(randInt(0+PADDING, MAP_HEIGHT-PADDING)),
-		vx:    0,
-		vy:    0,
+		coord: Coord{
+			x: float64(randInt(0+PADDING, MAP_WIDTH-PADDING)),
+			y: float64(randInt(0+PADDING, MAP_HEIGHT-PADDING)),
+		},
+		vel: Vector{
+			x: 0,
+			y: 0,
+		},
 		angle: 0,
 	}
 }
@@ -181,7 +187,7 @@ func drawCheckpoints(checkpoints []Coord) {
 
 func drawCar(car Car) {
 	p5.Fill(color.RGBA{R: 255, A: 255})
-	p5.Circle(car.x*SCALE, car.y*SCALE, 50)
+	p5.Circle(car.coord.x*SCALE, car.coord.y*SCALE, 50)
 }
 
 func norm(v Vector) float64 {
@@ -211,10 +217,24 @@ func multVector(v Vector, factor float64) Vector {
 	}
 }
 
+func truncVector(v Vector) Vector {
+	return Vector{
+		x: math.Trunc(v.x),
+		y: math.Trunc(v.y),
+	}
+}
+
 func addVector(v1 Vector, v2 Vector) Vector {
 	return Vector{
 		x: v1.x + v2.x,
 		y: v1.y + v2.y,
+	}
+}
+
+func applyVector(c Coord, v Vector) Coord {
+	return Coord{
+		x: c.x + v.x,
+		y: c.y + v.y,
 	}
 }
 
@@ -240,98 +260,39 @@ func normalVectorFromAngle(a float64) Vector {
 }
 
 func searchCarParams() {
-	// best is {fastThrust:160 slowThrust:75 maxAngle:60} (73963)
-	// best is {fastThrust:166 slowThrust:81 maxAngle:60} (78413)
-	// best is {fastThrust:165 slowThrust:81 maxAngle:58} (76630)
-
 	cnt := 0
 
 	for {
-		fastThrust := randInt(minFastThrust, maxFastThrust)
-		slowThrust := randInt(minSlowThrust, maxSlowThrust)
-		maxAngle := randInt(minMaxAngle, maxMaxAngle)
+		cnt += 1
 
-		if slowThrust <= fastThrust {
-			cnt += 1
-			carParams := CarParameters{
-				fastThrust: fastThrust,
-				slowThrust: slowThrust,
-				maxAngle:   maxAngle,
+		totalSteps = 0
+		for checkpointsMapIndex := 0; checkpointsMapIndex < len(allMaps); checkpointsMapIndex += 1 {
+
+			displayCheckpoints = allMaps[checkpointsMapIndex]
+			displayCheckpointsMapIndex = checkpointsMapIndex
+
+			state := State{
+				car:           initCar(),
+				idxCheckpoint: 0,
+				lap:           0,
 			}
 
-			totalSteps = 0
-			for checkpointsMapIndex := 0; checkpointsMapIndex < len(allMaps); checkpointsMapIndex += 1 {
+			displayLap = 0
 
-				displayCheckpoints = allMaps[checkpointsMapIndex]
-				displayCheckpointsMapIndex = checkpointsMapIndex
+			thisMapSteps = 0
 
-				state := State{
-					car:           initCar(),
-					idxCheckpoint: 0,
-					lap:           0,
-				}
+			for over := false; !over; {
+				over, state = update(state, checkpointsMapIndex)
 
-				displayLap = 0
+				displayCar = state.car
 
-				thisMapSteps = 0
-
-				for over := false; !over; {
-					over, state = update(carParams, state, checkpointsMapIndex)
-
-					displayCar = state.car
-
-					if !fastSim {
-						waitTime := 20000 * time.Microsecond
-						time.Sleep(time.Duration(waitTime))
-					}
-				}
-
-				// log("Done map ", fmt.Sprintf("map %d in %d steps", checkpointsMapIndex, thisMapSteps))
-			}
-
-			if totalSteps < bestParamsScore {
-				bestParamsScore = totalSteps
-				bestParams = carParams
-			}
-
-			log("End all maps", fmt.Sprintf("took %d steps, params %+v - best is %+v (%d) - %d", totalSteps, carParams, bestParams, bestParamsScore, cnt))
-
-			if cnt > 0 {
-				dMinFastThrust := math.Abs(float64(bestParams.fastThrust) - float64(minFastThrust))
-				dMaxFastThrust := math.Abs(float64(bestParams.fastThrust) - float64(maxFastThrust))
-				dMinSlowThrust := math.Abs(float64(bestParams.slowThrust) - float64(minSlowThrust))
-				dMaxSlowThrust := math.Abs(float64(bestParams.slowThrust) - float64(maxSlowThrust))
-				dMinMaxAngle := math.Abs(float64(bestParams.maxAngle) - float64(minMaxAngle))
-				dMaxMaxAngle := math.Abs(float64(bestParams.maxAngle) - float64(maxMaxAngle))
-
-				if (bestParams.fastThrust > minFastThrust+1) && (dMinFastThrust >= dMaxFastThrust) {
-					minFastThrust += 1
-				}
-
-				if (bestParams.fastThrust < maxFastThrust-1) && (dMaxFastThrust >= dMinFastThrust) {
-					maxFastThrust -= 1
-				}
-
-				if (bestParams.slowThrust > minSlowThrust+1) && (dMinSlowThrust >= dMaxSlowThrust) {
-					minSlowThrust += 1
-				}
-
-				if (bestParams.slowThrust < maxSlowThrust-1) && (dMaxSlowThrust >= dMinSlowThrust) {
-					maxSlowThrust -= 1
-				}
-
-				if (bestParams.maxAngle > minMaxAngle+1) && (dMinMaxAngle >= dMaxMaxAngle) {
-					minMaxAngle += 1
-				}
-
-				if (bestParams.maxAngle < maxMaxAngle-1) && (dMaxMaxAngle >= dMinMaxAngle) {
-					maxMaxAngle -= 1
-				}
-
-				if math.Abs(float64(maxFastThrust)-float64(minFastThrust)) <= 2 && math.Abs(float64(maxSlowThrust)-float64(minSlowThrust)) <= 2 && math.Abs(float64(maxMaxAngle)-float64(minMaxAngle)) <= 2 {
-					fastSim = false
+				if !fastSim {
+					waitTime := 20000 * time.Microsecond
+					time.Sleep(time.Duration(waitTime))
 				}
 			}
+
+			// log("Done map ", fmt.Sprintf("map %d in %d steps", checkpointsMapIndex, thisMapSteps))
 		}
 	}
 	os.Exit(0)
@@ -339,53 +300,35 @@ func searchCarParams() {
 
 func applyAction(car Car, angle float64, thrust int) Car {
 	toTargetAngleRestricted := restrictAngle(toRadians(car.angle), angle)
-
 	car.angle = toDegrees(toTargetAngleRestricted)
-
 	acc := multVector(normalVectorFromAngle(toTargetAngleRestricted), float64(thrust))
-	newSpeed := addVector(Vector{car.vx, car.vy}, acc)
+	car.vel = addVector(Vector{car.vel.x, car.vel.y}, acc)
+	car.coord = applyVector(car.coord, car.vel)
+	car.vel = multVector(car.vel, 0.85)
+	car.vel = truncVector(car.vel)
 
-	car.vx = newSpeed.x
-	car.vy = newSpeed.y
-
-	car.x += car.vx
-	car.y += car.vy
-
-	car.vx *= 0.85
-	car.vy *= 0.85
-
-	car.vx = math.Trunc(car.vx)
-	car.vy = math.Trunc(car.vy)
-
-	car.x = math.Trunc(car.x)
-	car.y = math.Trunc(car.y)
+	car.coord.x = math.Trunc(car.coord.x)
+	car.coord.y = math.Trunc(car.coord.y)
 
 	return car
 }
 
-func update(carParams CarParameters, state State, checkpointsMapIndex int) (bool, State) {
+func update(state State, checkpointsMapIndex int) (bool, State) {
 
 	target := allMaps[checkpointsMapIndex][state.idxCheckpoint]
 
-	outputThrust, targetCoord := heuristic(carParams, allMaps[checkpointsMapIndex], state.idxCheckpoint, state.car)
+	bestAction := beamSearch(allMaps[checkpointsMapIndex], state)
 
-	displayTarget = targetCoord
+	displayTarget = applyVector(state.car.coord, normalVectorFromAngle(toRadians(float64(bestAction.angle))))
 
 	// log("output", fmt.Sprintf("Going to %+v at thrust %d", targetCoord, outputThrust))
 
-	toTargetVector := Vector{
-		x: targetCoord.x - state.car.x,
-		y: targetCoord.y - state.car.y,
-	}
-
-	toTargetAngle := math.Atan2(toTargetVector.y, toTargetVector.x)
-
-	state.car = applyAction(state.car, toTargetAngle, outputThrust)
+	state.car = applyAction(state.car, toRadians(float64(bestAction.angle)), bestAction.thrust)
 
 	thisMapSteps += 1
 	totalSteps += 1
 
-	dTarget := dist(Coord{state.car.x, state.car.y}, target)
+	dTarget := dist(Coord{state.car.coord.x, state.car.coord.y}, target)
 
 	if (dTarget <= CP_RADIUS && state.lap == MAX_LAP && state.idxCheckpoint == 0) || thisMapSteps > 600 {
 		return true, state
@@ -420,35 +363,19 @@ func draw() {
 	}
 	drawCar(displayCar)
 
-	drawTarget(Coord{displayCar.x, displayCar.y}, displayTarget)
+	drawTarget(Coord{displayCar.coord.x, displayCar.coord.y}, displayTarget)
 
 	drawStats(displayCheckpointsMapIndex, displayLap)
 	drawSearchSpace()
 }
 
-func heuristic(carParams CarParameters, checkpoints []Coord, checkpointIndex int, currentCar Car) (int, Coord) {
+func beamSearch(checkpoints []Coord, state State) Action {
+
 	targetCheckpoint := checkpoints[checkpointIndex]
 
-	// log("target", targetCheckpoint)
+	bestAction := Action{}
 
-	angleCarTarget := math.Atan2(targetCheckpoint.y-float64(currentCar.y), targetCheckpoint.x-float64(currentCar.x))
-
-	angleCarVelocity := math.Atan2(float64(currentCar.vy), float64(currentCar.vx))
-
-	diffAngleCarTarget := diffAngle(angleCarVelocity, angleCarTarget)
-
-	// log("angleCarTarget", toDegrees(angleCarTarget))
-	// log("angleCarVelocity", toDegrees(angleCarVelocity))
-	// log("diffAngleCarTarget", toDegrees(diffAngleCarTarget))
-
-	thrust := carParams.fastThrust
-	if toDegrees(math.Abs(diffAngleCarTarget)) > float64(carParams.maxAngle) {
-		thrust = carParams.slowThrust
-	}
-
-	// log("Turn", fmt.Sprintf("Thrust %d target %v", thrust, targetCheckpoint))
-
-	return thrust, targetCheckpoint
+	return bestAction
 }
 
 func mainCG() {
@@ -476,14 +403,18 @@ func mainCG() {
 		fmt.Scan(&checkpointIndex, &x, &y, &vx, &vy, &angle)
 
 		currentCar := Car{
-			vx:    float64(vx),
-			vy:    float64(vy),
-			x:     float64(x),
-			y:     float64(y),
+			vel: Vector{
+				x: float64(vx),
+				y: float64(vy),
+			},
+			coord: Coord{
+				x: float64(x),
+				y: float64(y),
+			},
 			angle: float64(angle),
 		}
 
-		thrust, targetCheckpoint := heuristic(CarParameters{170, 76, 76}, checkpointsList, checkpointIndex, currentCar)
+		thrust, targetCheckpoint := beamSearch(checkpointsList, checkpointIndex, currentCar)
 
 		// fmt.Fprintln(os.Stderr, "Debug messages...")
 		fmt.Printf("%d %d %d message\n", int(targetCheckpoint.x), int(targetCheckpoint.y), thrust)
