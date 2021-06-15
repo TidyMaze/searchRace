@@ -20,9 +20,9 @@ const CP_DIAMETER = CP_RADIUS * 2
 const PADDING = 1000
 const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 30
-const FAST_SIM = false
 const MAX_LAP = 3
 
+var fastSim = true
 var displayCheckpointsMapIndex int
 var displayLap int
 var displayCheckpoints []Coord
@@ -246,7 +246,7 @@ func searchCarParams() {
 
 	cnt := 0
 
-	for cnt < 10000 {
+	for {
 		fastThrust := randInt(minFastThrust, maxFastThrust)
 		slowThrust := randInt(minSlowThrust, maxSlowThrust)
 		maxAngle := randInt(minMaxAngle, maxMaxAngle)
@@ -280,7 +280,7 @@ func searchCarParams() {
 
 					displayCar = state.car
 
-					if !FAST_SIM {
+					if !fastSim {
 						waitTime := 8000 * time.Microsecond
 						time.Sleep(time.Duration(waitTime))
 					}
@@ -326,6 +326,10 @@ func searchCarParams() {
 
 				if (bestParams.maxAngle < maxMaxAngle-1) && (dMaxMaxAngle >= dMinMaxAngle) {
 					maxMaxAngle -= 1
+				}
+
+				if math.Abs(float64(maxFastThrust)-float64(minFastThrust)) <= 2 && math.Abs(float64(maxSlowThrust)-float64(minSlowThrust)) <= 2 && math.Abs(float64(maxMaxAngle)-float64(minMaxAngle)) <= 2 {
+					fastSim = false
 				}
 			}
 		}
