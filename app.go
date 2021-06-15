@@ -273,8 +273,9 @@ func searchCarParams() {
 			if totalSteps < bestParamsScore {
 				bestParamsScore = totalSteps
 				bestParams = carParams
-				log("End all maps", fmt.Sprintf("took %d steps, params %+v - best is %+v (%d) - %d", totalSteps, carParams, bestParams, bestParamsScore, cnt))
 			}
+
+			log("End all maps", fmt.Sprintf("took %d steps, params %+v - best is %+v (%d) - %d", totalSteps, carParams, bestParams, bestParamsScore, cnt))
 
 			if cnt > 0 {
 				dMinFastThrust := math.Abs(float64(bestParams.fastThrust) - float64(minFastThrust))
