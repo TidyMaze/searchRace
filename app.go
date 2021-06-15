@@ -23,9 +23,13 @@ const MAPS_PANEL_SIZE = 30
 const FAST_SIM = false
 const MAX_LAP = 3
 
-var checkpointsMapIndex int
-var car Car
-var idxCheckpoint = 0
+var displayCheckpointsMapIndex int
+var displayLap int
+var displayCheckpoints []Coord
+
+var displayCar Car
+
+// var idxCheckpoint = 0
 var allMaps [][]Coord
 var thisMapSteps = 0
 var totalSteps = 0
@@ -36,8 +40,6 @@ var minSlowThrust = 10
 var maxSlowThrust = 200
 var minMaxAngle = 0
 var maxMaxAngle = 180
-
-var lap = 0
 
 var bestParams = CarParameters{}
 var bestParamsScore = 1000000000
@@ -60,6 +62,12 @@ type CarParameters struct {
 	fastThrust int
 	slowThrust int
 	maxAngle   int
+}
+
+type State struct {
+	car           Car
+	idxCheckpoint int
+	lap           int
 }
 
 func log(msg string, v interface{}) {
@@ -101,8 +109,8 @@ func clampAngle(a float64, minA float64, maxA float64) float64 {
 	}
 }
 
-func initCar() {
-	car = Car{
+func initCar() Car {
+	return Car{
 		x:     float64(randInt(0+PADDING, MAP_WIDTH-PADDING)),
 		y:     float64(randInt(0+PADDING, MAP_HEIGHT-PADDING)),
 		vx:    0,
@@ -250,19 +258,29 @@ func searchCarParams() {
 				maxAngle:   maxAngle,
 			}
 
-			initCar()
 			totalSteps = 0
-			for checkpointsMapIndex = 0; checkpointsMapIndex < len(allMaps); checkpointsMapIndex += 1 {
+			for checkpointsMapIndex := 0; checkpointsMapIndex < len(allMaps); checkpointsMapIndex += 1 {
 
-				lap = 0
-				idxCheckpoint = 0
+				displayCheckpoints = allMaps[checkpointsMapIndex]
+				displayCheckpointsMapIndex = checkpointsMapIndex
+
+				state := State{
+					car:           initCar(),
+					idxCheckpoint: 0,
+					lap:           0,
+				}
+
+				displayLap = 0
+
 				thisMapSteps = 0
 
 				for over := false; !over; {
-					over = update(carParams)
+					over, state = update(carParams, state, checkpointsMapIndex)
+
+					displayCar = state.car
 
 					if !FAST_SIM {
-						waitTime := 5 * time.Microsecond
+						waitTime := 5000 * time.Microsecond
 						time.Sleep(time.Duration(waitTime))
 					}
 				}
@@ -340,40 +358,41 @@ func applyAction(car Car, angle float64, thrust int) Car {
 	return car
 }
 
-func update(carParams CarParameters) bool {
+func update(carParams CarParameters, state State, checkpointsMapIndex int) (bool, State) {
 
-	target := allMaps[checkpointsMapIndex][idxCheckpoint]
+	target := allMaps[checkpointsMapIndex][state.idxCheckpoint]
 
-	outputThrust, targetCoord := heuristic(carParams, allMaps[checkpointsMapIndex], idxCheckpoint, car)
+	outputThrust, targetCoord := heuristic(carParams, allMaps[checkpointsMapIndex], state.idxCheckpoint, state.car)
 
 	toTargetVector := Vector{
-		x: targetCoord.x - car.x,
-		y: targetCoord.y - car.y,
+		x: targetCoord.x - state.car.x,
+		y: targetCoord.y - state.car.y,
 	}
 
 	toTargetAngle := math.Atan2(toTargetVector.y, toTargetVector.x)
 
-	car = applyAction(car, toTargetAngle, outputThrust)
+	state.car = applyAction(state.car, toTargetAngle, outputThrust)
 
 	thisMapSteps += 1
 	totalSteps += 1
 
-	dTarget := dist(Coord{car.x, car.y}, target)
+	dTarget := dist(Coord{state.car.x, state.car.y}, target)
 
-	if (dTarget <= CP_RADIUS && lap == MAX_LAP && idxCheckpoint == 0) || thisMapSteps > 600 {
-		return true
+	if (dTarget <= CP_RADIUS && state.lap == MAX_LAP && state.idxCheckpoint == 0) || thisMapSteps > 600 {
+		return true, state
 	} else if dTarget <= CP_RADIUS {
-		if idxCheckpoint == 0 {
-			lap += 1
+		if state.idxCheckpoint == 0 {
+			state.lap += 1
+			displayLap = state.lap
 		}
-		idxCheckpoint = (idxCheckpoint + 1) % len(allMaps[checkpointsMapIndex])
-		return false
+		state.idxCheckpoint = (state.idxCheckpoint + 1) % len(allMaps[checkpointsMapIndex])
+		return false, state
 	} else {
-		return false
+		return false, state
 	}
 }
 
-func drawStats() {
+func drawStats(checkpointsMapIndex int, lap int) {
 	p5.Text(fmt.Sprintf("totalStep %d\nstep %d\nmap %d/%d\nlap %d/%d", totalSteps, thisMapSteps, checkpointsMapIndex+1, MAPS_PANEL_SIZE, lap, MAX_LAP), 10, 50)
 }
 
@@ -383,11 +402,11 @@ func drawSearchSpace() {
 }
 
 func draw() {
-	if checkpointsMapIndex < len(allMaps) {
-		drawCheckpoints(allMaps[checkpointsMapIndex])
+	if len(displayCheckpoints) > 0 {
+		drawCheckpoints(displayCheckpoints)
 	}
-	drawCar(car)
-	drawStats()
+	drawCar(displayCar)
+	drawStats(displayCheckpointsMapIndex, displayLap)
 	drawSearchSpace()
 }
 
