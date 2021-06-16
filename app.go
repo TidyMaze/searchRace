@@ -221,6 +221,13 @@ func truncVector(v Vector) Vector {
 	}
 }
 
+func truncCoord(c Coord) Coord {
+	return Coord{
+		x: math.Trunc(c.x),
+		y: math.Trunc(c.y),
+	}
+}
+
 func addVector(v1 Vector, v2 Vector) Vector {
 	return Vector{
 		x: v1.x + v2.x,
@@ -304,8 +311,7 @@ func applyAction(car Car, angle float64, thrust int) Car {
 	car.vel = multVector(car.vel, 0.85)
 	car.vel = truncVector(car.vel)
 
-	car.coord.x = math.Trunc(car.coord.x)
-	car.coord.y = math.Trunc(car.coord.y)
+	car.coord = truncCoord(car.coord)
 
 	return car
 }
