@@ -430,12 +430,14 @@ func beamSearch(checkpoints []Coord, state State) Action {
 
 	over := false
 
+	newCandidates := make([]Trajectory, 0, POPULATION_SIZE*1000)
+
 	for depth := 0; !over && depth < 8; depth += 1 {
 		// log("Depth", fmt.Sprintf("%d: %d candidates", depth, len(population)))
 
 		seen := 0
 
-		newCandidates := []Trajectory{}
+		newCandidates = newCandidates[:0]
 		for _, candidate := range population {
 			for offsetAngle := -18; offsetAngle <= 18; offsetAngle += 18 {
 				angle := regularizeAngle(toRadians(float64(offsetAngle)) + toRadians(candidate.currentState.car.angle))
