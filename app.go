@@ -431,7 +431,7 @@ func beamSearch(checkpoints []Coord, state State) Action {
 
 	newCandidates := make([]Trajectory, 0, POPULATION_SIZE*1000)
 
-	for depth := 0; !over && depth < 10; depth += 1 {
+	for depth := 0; !over && depth < 20; depth += 1 {
 		// log("Depth", fmt.Sprintf("%d: %d candidates", depth, len(population)))
 
 		seen := 0
