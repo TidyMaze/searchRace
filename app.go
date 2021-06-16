@@ -466,18 +466,18 @@ func beamSearch(checkpoints []Coord, state State) Action {
 			}
 		}
 
-		log("population before sort", len(newCandidates))
+		// log("population before sort", len(newCandidates))
 		// log("skipped", seen)
 
 		sort.Slice(newCandidates, func(i, j int) bool {
 			return newCandidates[i].score > newCandidates[j].score
 		})
 
-		if depth == 7 {
-			for i := 0; i < 10; i++ {
-				log("candidate", fmt.Sprintf("%d %f %v %v", i, newCandidates[i].score, newCandidates[i].history, newCandidates[i].currentState))
-			}
-		}
+		// if depth == 7 {
+		// 	for i := 0; i < 10; i++ {
+		// 		log("candidate", fmt.Sprintf("%d %f %v %v", i, newCandidates[i].score, newCandidates[i].history, newCandidates[i].currentState))
+		// 	}
+		// }
 
 		copy(population, newCandidates)
 	}
