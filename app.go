@@ -391,14 +391,14 @@ func beamSearch(checkpoints []Coord, state State) Action {
 		for _, candidate := range population {
 			for offsetAngle := -18; offsetAngle <= 18; offsetAngle += 1 {
 				angle := toRadians(float64(offsetAngle) + toRadians(candidate.currentState.car.angle))
-				for thrust := 0; thrust <= 200; thrust += 50 {
+				for thrust := 10; thrust <= 200; thrust += 50 {
 					newState := applyActionOnState(checkpoints, candidate.currentState, angle, thrust)
 
 					newHistory := make([]Action, len(candidate.history), len(candidate.history)+1)
 					copy(newHistory, candidate.history)
 					newHistory = append(newHistory, Action{
-						int(angle),
 						thrust,
+						int(angle),
 					})
 
 					newCheckpointIndex := newState.idxCheckpoint
@@ -418,12 +418,14 @@ func beamSearch(checkpoints []Coord, state State) Action {
 
 		copy(population, newCandidates)
 
-		if depth == 599 {
+		if depth == 10 {
 			over = true
 		}
 	}
 
-	bestAction := population[0].history[len(population[0].history)-1]
+	log("population sorted", fmt.Sprintf("pop %+v", population))
+
+	bestAction := population[0].history[0]
 
 	return bestAction
 }
