@@ -276,9 +276,10 @@ func searchCarParams() {
 			displayCheckpointsMapIndex = checkpointsMapIndex
 
 			state := State{
-				car:           initCar(),
-				idxCheckpoint: 0,
-				lap:           0,
+				car:               initCar(),
+				idxCheckpoint:     0,
+				lap:               0,
+				passedCheckpoints: 0,
 			}
 
 			displayLap = 0
@@ -310,6 +311,7 @@ func applyAction(car Car, angle float64, thrust int) Car {
 	car.coord = applyVector(car.coord, car.vel)
 	car.vel = multVector(car.vel, 0.85)
 	car.vel = truncVector(car.vel)
+	car.angle = math.Round(car.angle)
 	car.coord = truncCoord(car.coord)
 
 	return car
@@ -353,6 +355,8 @@ func update(turn int, state State, checkpointsMapIndex int) (bool, State) {
 
 	newState := applyActionOnState(checkpoints, state, toRadians(float64(bestAction.angle)), bestAction.thrust)
 
+	newState.passedCheckpoints = 0
+
 	return false, newState
 }
 
@@ -389,14 +393,14 @@ func beamSearch(checkpoints []Coord, state State) Action {
 
 	over := false
 
-	for depth := 0; !over && depth < 50; depth += 1 {
+	for depth := 0; !over && depth < 5; depth += 1 {
 		// log("Depth", fmt.Sprintf("%d: %d candidates", depth, len(population)))
 
 		newCandidates := []Trajectory{}
 		for _, candidate := range population {
-			for offsetAngle := -18; offsetAngle <= 18; offsetAngle += 1 {
+			for offsetAngle := -18; offsetAngle <= 18; offsetAngle += 9 {
 				angle := regularizeAngle(toRadians(float64(offsetAngle)) + toRadians(candidate.currentState.car.angle))
-				for thrust := 0; thrust <= 200; thrust += 50 {
+				for thrust := 0; thrust <= 150; thrust += 10 {
 					newState := applyActionOnState(checkpoints, candidate.currentState, angle, thrust)
 
 					newHistory := make([]Action, len(candidate.history), len(candidate.history)+1)
@@ -426,9 +430,11 @@ func beamSearch(checkpoints []Coord, state State) Action {
 
 	// log("population sorted", fmt.Sprintf("pop %+v", population))
 
-	bestAction := population[0].history[0]
+	best := population[0]
 
-	return bestAction
+	log("best", fmt.Sprintf("%+v", best))
+
+	return best.history[0]
 }
 
 func mainCG() {
