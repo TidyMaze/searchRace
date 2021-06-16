@@ -347,7 +347,7 @@ func update(turn int, state State, checkpointsMapIndex int) (bool, State) {
 
 	bestAction := beamSearch(checkpoints, state)
 
-	displayTarget = applyVector(state.car.coord, normalVectorFromAngle(toRadians(float64(bestAction.angle))))
+	displayTarget = state.car.coord
 
 	log("output", fmt.Sprintf("Turn %d best action is %+v with target %d", turn, bestAction, state.idxCheckpoint))
 
