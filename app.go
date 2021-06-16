@@ -310,7 +310,6 @@ func applyAction(car Car, angle float64, thrust int) Car {
 	car.coord = applyVector(car.coord, car.vel)
 	car.vel = multVector(car.vel, 0.85)
 	car.vel = truncVector(car.vel)
-
 	car.coord = truncCoord(car.coord)
 
 	return car
