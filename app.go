@@ -441,7 +441,7 @@ func beamSearch(checkpoints []Coord, state State) Action {
 		for _, candidate := range population {
 			for offsetAngle := -18; offsetAngle <= 18; offsetAngle += 18 {
 				angle := regularizeAngle(toRadians(float64(offsetAngle)) + toRadians(candidate.currentState.car.angle))
-				for thrust := 0; thrust <= 200; thrust += 100 {
+				for thrust := 0; thrust <= 200; thrust += 50 {
 					newState := applyActionOnState(checkpoints, candidate.currentState, angle, thrust)
 
 					newHistory := make([]Action, len(candidate.history), len(candidate.history)+1)
