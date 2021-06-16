@@ -306,7 +306,7 @@ func applyAction(car Car, angle float64, thrust int) Car {
 	toTargetAngleRestricted := restrictAngle(toRadians(car.angle), angle)
 	car.angle = toDegrees(toTargetAngleRestricted)
 	acc := multVector(normalVectorFromAngle(toTargetAngleRestricted), float64(thrust))
-	car.vel = addVector(Vector{car.vel.x, car.vel.y}, acc)
+	car.vel = addVector(car.vel, acc)
 	car.coord = applyVector(car.coord, car.vel)
 	car.vel = multVector(car.vel, 0.85)
 	car.vel = truncVector(car.vel)
