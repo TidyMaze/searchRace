@@ -23,7 +23,7 @@ const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 30
 const MAX_LAP = 3
 
-const POPULATION_SIZE = 10
+const POPULATION_SIZE = 100
 
 var fastSim = true
 var displayCheckpointsMapIndex int
@@ -390,15 +390,15 @@ func beamSearch(checkpoints []Coord, state State) Action {
 		newCandidates := []Trajectory{}
 		for _, candidate := range population {
 			for offsetAngle := -18; offsetAngle <= 18; offsetAngle += 1 {
-				angle := toRadians(float64(offsetAngle) + toRadians(candidate.currentState.car.angle))
-				for thrust := 10; thrust <= 200; thrust += 50 {
+				angle := toRadians(float64(offsetAngle)) + toRadians(candidate.currentState.car.angle)
+				for thrust := 0; thrust <= 200; thrust += 10 {
 					newState := applyActionOnState(checkpoints, candidate.currentState, angle, thrust)
 
 					newHistory := make([]Action, len(candidate.history), len(candidate.history)+1)
 					copy(newHistory, candidate.history)
 					newHistory = append(newHistory, Action{
 						thrust,
-						int(angle),
+						int(toDegrees(angle)),
 					})
 
 					newCheckpointIndex := newState.idxCheckpoint
@@ -418,12 +418,12 @@ func beamSearch(checkpoints []Coord, state State) Action {
 
 		copy(population, newCandidates)
 
-		if depth == 10 {
+		if depth == 100 {
 			over = true
 		}
 	}
 
-	log("population sorted", fmt.Sprintf("pop %+v", population))
+	// log("population sorted", fmt.Sprintf("pop %+v", population))
 
 	bestAction := population[0].history[0]
 
