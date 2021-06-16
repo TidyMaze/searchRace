@@ -344,7 +344,7 @@ func update(turn int, state State, checkpointsMapIndex int) (bool, State) {
 
 	displayTarget = applyVector(state.car.coord, normalVectorFromAngle(toRadians(float64(bestAction.angle))))
 
-	log("output", fmt.Sprintf("Turn %d best action is %+v", turn, bestAction))
+	log("output", fmt.Sprintf("Turn %d best action is %+v with target %d", turn, bestAction, state.idxCheckpoint))
 
 	newState := applyActionOnState(checkpoints, state, toRadians(float64(bestAction.angle)), bestAction.thrust)
 
@@ -391,22 +391,20 @@ func beamSearch(checkpoints []Coord, state State) Action {
 		for _, candidate := range population {
 			for offsetAngle := -18; offsetAngle <= 18; offsetAngle += 1 {
 				angle := toRadians(float64(offsetAngle)) + toRadians(candidate.currentState.car.angle)
-				for thrust := 0; thrust <= 200; thrust += 10 {
+				for thrust := 0; thrust <= 200; thrust += 20 {
 					newState := applyActionOnState(checkpoints, candidate.currentState, angle, thrust)
 
 					newHistory := make([]Action, len(candidate.history), len(candidate.history)+1)
 					copy(newHistory, candidate.history)
 					newHistory = append(newHistory, Action{
-						thrust,
-						int(toDegrees(angle)),
+						thrust: thrust,
+						angle:  int(toDegrees(angle)),
 					})
-
-					newCheckpointIndex := newState.idxCheckpoint
 
 					newCandidates = append(newCandidates, Trajectory{
 						history:      newHistory,
 						currentState: newState,
-						score:        float64(newState.passedCheckpoints)*100000 - dist(newState.car.coord, checkpoints[newCheckpointIndex]),
+						score:        float64(newState.passedCheckpoints)*100000 - dist(newState.car.coord, checkpoints[newState.idxCheckpoint]),
 					})
 				}
 			}
