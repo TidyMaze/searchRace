@@ -25,7 +25,7 @@ const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 30
 const MAX_LAP = 3
 
-const POPULATION_SIZE = 1000
+const POPULATION_SIZE = 500
 
 var fastSim = true
 var displayCheckpointsMapIndex int
@@ -85,7 +85,7 @@ func isSameState(s1 State, s2 State) bool {
 	return isSameCar(s1.car, s2.car) &&
 		s1.idxCheckpoint == s2.idxCheckpoint &&
 		s1.lap == s2.lap &&
-		s1.passedCheckpoints == s2.lap
+		s1.passedCheckpoints == s2.passedCheckpoints
 }
 
 func log(msg string, v interface{}) {
