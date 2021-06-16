@@ -389,14 +389,14 @@ func beamSearch(checkpoints []Coord, state State) Action {
 
 	over := false
 
-	for depth := 0; !over; depth += 1 {
+	for depth := 0; !over && depth < 50; depth += 1 {
 		// log("Depth", fmt.Sprintf("%d: %d candidates", depth, len(population)))
 
 		newCandidates := []Trajectory{}
 		for _, candidate := range population {
 			for offsetAngle := -18; offsetAngle <= 18; offsetAngle += 1 {
 				angle := regularizeAngle(toRadians(float64(offsetAngle)) + toRadians(candidate.currentState.car.angle))
-				for thrust := 0; thrust <= 200; thrust += 20 {
+				for thrust := 0; thrust <= 200; thrust += 50 {
 					newState := applyActionOnState(checkpoints, candidate.currentState, angle, thrust)
 
 					newHistory := make([]Action, len(candidate.history), len(candidate.history)+1)
@@ -409,21 +409,19 @@ func beamSearch(checkpoints []Coord, state State) Action {
 					newCandidates = append(newCandidates, Trajectory{
 						history:      newHistory,
 						currentState: newState,
-						score:        float64(newState.passedCheckpoints)*100000 - dist(newState.car.coord, checkpoints[newState.idxCheckpoint]),
+						score:        float64(newState.passedCheckpoints)*100000 - math.Max(0, dist(newState.car.coord, checkpoints[newState.idxCheckpoint])-CP_RADIUS),
 					})
 				}
 			}
 		}
+
+		// log("population before sort", len(newCandidates))
 
 		sort.Slice(newCandidates, func(i, j int) bool {
 			return newCandidates[i].score > newCandidates[j].score
 		})
 
 		copy(population, newCandidates)
-
-		if depth == 100 {
-			over = true
-		}
 	}
 
 	// log("population sorted", fmt.Sprintf("pop %+v", population))
