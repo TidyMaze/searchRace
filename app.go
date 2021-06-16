@@ -6,6 +6,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"sort"
 	"strconv"
 	"time"
 
@@ -22,6 +23,8 @@ const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 30
 const MAX_LAP = 3
 
+const POPULATION_SIZE = 10
+
 var fastSim = true
 var displayCheckpointsMapIndex int
 var displayLap int
@@ -34,13 +37,6 @@ var displayCar Car
 var allMaps [][]Coord
 var thisMapSteps = 0
 var totalSteps = 0
-
-var minFastThrust = 10
-var maxFastThrust = 200
-var minSlowThrust = 10
-var maxSlowThrust = 200
-var minMaxAngle = 0
-var maxMaxAngle = 180
 
 type Car struct {
 	coord Coord
@@ -57,9 +53,10 @@ type Vector struct {
 }
 
 type State struct {
-	car           Car
-	idxCheckpoint int
-	lap           int
+	car               Car
+	idxCheckpoint     int
+	lap               int
+	passedCheckpoints int
 }
 
 type Action struct {
@@ -313,44 +310,49 @@ func applyAction(car Car, angle float64, thrust int) Car {
 	return car
 }
 
+func applyActionOnState(checkpoints []Coord, state State, angle float64, thrust int) State {
+	newCar := applyAction(state.car, angle, thrust)
+
+	target := checkpoints[state.idxCheckpoint]
+	dTarget := dist(Coord{newCar.coord.x, newCar.coord.y}, target)
+
+	newLap := state.lap
+	newCheckpointIndex := state.idxCheckpoint
+	newPassedCheckpoints := state.passedCheckpoints
+
+	if dTarget <= CP_RADIUS {
+		if state.idxCheckpoint == 0 {
+			newLap += 1
+		}
+		newCheckpointIndex = (newCheckpointIndex + 1) % len(checkpoints)
+		newPassedCheckpoints += 1
+	}
+
+	return State{
+		car:               newCar,
+		idxCheckpoint:     newCheckpointIndex,
+		lap:               newLap,
+		passedCheckpoints: newPassedCheckpoints,
+	}
+}
+
 func update(state State, checkpointsMapIndex int) (bool, State) {
 
-	target := allMaps[checkpointsMapIndex][state.idxCheckpoint]
+	checkpoints := allMaps[checkpointsMapIndex]
 
-	bestAction := beamSearch(allMaps[checkpointsMapIndex], state)
+	bestAction := beamSearch(checkpoints, state)
 
 	displayTarget = applyVector(state.car.coord, normalVectorFromAngle(toRadians(float64(bestAction.angle))))
 
 	// log("output", fmt.Sprintf("Going to %+v at thrust %d", targetCoord, outputThrust))
 
-	state.car = applyAction(state.car, toRadians(float64(bestAction.angle)), bestAction.thrust)
+	newState := applyActionOnState(checkpoints, state, toRadians(float64(bestAction.angle)), bestAction.thrust)
 
-	thisMapSteps += 1
-	totalSteps += 1
-
-	dTarget := dist(Coord{state.car.coord.x, state.car.coord.y}, target)
-
-	if (dTarget <= CP_RADIUS && state.lap == MAX_LAP && state.idxCheckpoint == 0) || thisMapSteps > 600 {
-		return true, state
-	} else if dTarget <= CP_RADIUS {
-		if state.idxCheckpoint == 0 {
-			state.lap += 1
-			displayLap = state.lap
-		}
-		state.idxCheckpoint = (state.idxCheckpoint + 1) % len(allMaps[checkpointsMapIndex])
-		return false, state
-	} else {
-		return false, state
-	}
+	return false, newState
 }
 
 func drawStats(checkpointsMapIndex int, lap int) {
 	p5.Text(fmt.Sprintf("totalStep %d\nstep %d\nmap %d/%d\nlap %d/%d", totalSteps, thisMapSteps, checkpointsMapIndex+1, MAPS_PANEL_SIZE, lap, MAX_LAP), 10, 50)
-}
-
-func drawSearchSpace() {
-	p5.Fill(color.Transparent)
-	p5.Rect(float64(1600+minFastThrust), float64(100+minSlowThrust), float64(maxFastThrust)-float64(minFastThrust), float64(maxSlowThrust)-float64(minSlowThrust))
 }
 
 func drawTarget(from Coord, to Coord) {
@@ -366,14 +368,62 @@ func draw() {
 	drawTarget(Coord{displayCar.coord.x, displayCar.coord.y}, displayTarget)
 
 	drawStats(displayCheckpointsMapIndex, displayLap)
-	drawSearchSpace()
 }
 
 func beamSearch(checkpoints []Coord, state State) Action {
 
-	targetCheckpoint := checkpoints[checkpointIndex]
+	population := make([]Trajectory, 0, POPULATION_SIZE)
 
-	bestAction := Action{}
+	for iCandidate := 0; iCandidate < POPULATION_SIZE; iCandidate++ {
+		population = append(population, Trajectory{
+			history:      []Action{},
+			currentState: state,
+			score:        -1,
+		})
+	}
+
+	over := false
+
+	for depth := 0; !over; depth += 1 {
+		log("Depth", fmt.Sprintf("%d: %d candidates", depth, len(population)))
+
+		newCandidates := []Trajectory{}
+		for _, candidate := range population {
+			for offsetAngle := -18; offsetAngle <= 18; offsetAngle += 1 {
+				angle := toRadians(float64(offsetAngle) + toRadians(candidate.currentState.car.angle))
+				for thrust := 0; thrust <= 200; thrust += 50 {
+					newState := applyActionOnState(checkpoints, candidate.currentState, angle, thrust)
+
+					newHistory := make([]Action, len(candidate.history), len(candidate.history)+1)
+					copy(newHistory, candidate.history)
+					newHistory = append(newHistory, Action{
+						int(angle),
+						thrust,
+					})
+
+					newCheckpointIndex := newState.idxCheckpoint
+
+					newCandidates = append(newCandidates, Trajectory{
+						history:      newHistory,
+						currentState: newState,
+						score:        float64(newState.passedCheckpoints)*100000 - dist(newState.car.coord, checkpoints[newCheckpointIndex]),
+					})
+				}
+			}
+		}
+
+		sort.Slice(newCandidates, func(i, j int) bool {
+			return newCandidates[i].score > newCandidates[j].score
+		})
+
+		copy(population, newCandidates)
+
+		if depth == 599 {
+			over = true
+		}
+	}
+
+	bestAction := population[0].history[len(population[0].history)-1]
 
 	return bestAction
 }
@@ -414,10 +464,17 @@ func mainCG() {
 			angle: float64(angle),
 		}
 
-		thrust, targetCheckpoint := beamSearch(checkpointsList, checkpointIndex, currentCar)
+		state := State{
+			car:               currentCar,
+			idxCheckpoint:     checkpointIndex,
+			lap:               0,
+			passedCheckpoints: 0,
+		}
+
+		bestAction := beamSearch(checkpointsList, state)
 
 		// fmt.Fprintln(os.Stderr, "Debug messages...")
-		fmt.Printf("%d %d %d message\n", int(targetCheckpoint.x), int(targetCheckpoint.y), thrust)
+		fmt.Printf("EXPERT %d %d\n", int(bestAction.angle-angle), int(bestAction.thrust))
 	}
 }
 
