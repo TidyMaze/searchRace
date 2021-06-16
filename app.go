@@ -25,7 +25,7 @@ const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 30
 const MAX_LAP = 3
 
-const POPULATION_SIZE = 1000
+const POPULATION_SIZE = 2000
 
 var fastSim = true
 var displayCheckpointsMapIndex int
@@ -71,6 +71,21 @@ type Trajectory struct {
 	history      []Action
 	currentState State
 	score        float64
+}
+
+func isSameCar(c1 Car, c2 Car) bool {
+	return int(c1.angle) == int(c2.angle) &&
+		int(c1.coord.x) == int(c2.coord.x) &&
+		int(c1.coord.y) == int(c2.coord.y) &&
+		int(c1.vel.x) == int(c2.vel.x) &&
+		int(c1.vel.y) == int(c2.vel.y)
+}
+
+func isSameState(s1 State, s2 State) bool {
+	return isSameCar(s1.car, s2.car) &&
+		s1.idxCheckpoint == s2.idxCheckpoint &&
+		s1.lap == s2.lap &&
+		s1.passedCheckpoints == s2.lap
 }
 
 func log(msg string, v interface{}) {
@@ -392,6 +407,15 @@ func draw() {
 	drawStats(displayCheckpointsMapIndex, displayLap)
 }
 
+func seenState(ts []Trajectory, s State) bool {
+	for i := 0; i < len(ts); i++ {
+		if isSameState(ts[i].currentState, s) {
+			return true
+		}
+	}
+	return false
+}
+
 func beamSearch(checkpoints []Coord, state State) Action {
 
 	population := make([]Trajectory, 0, POPULATION_SIZE)
@@ -406,14 +430,16 @@ func beamSearch(checkpoints []Coord, state State) Action {
 
 	over := false
 
-	for depth := 0; !over && depth < 10; depth += 1 {
+	for depth := 0; !over && depth < 8; depth += 1 {
 		// log("Depth", fmt.Sprintf("%d: %d candidates", depth, len(population)))
+
+		seen := 0
 
 		newCandidates := []Trajectory{}
 		for _, candidate := range population {
-			for offsetAngle := -18; offsetAngle <= 18; offsetAngle += 9 {
+			for offsetAngle := -18; offsetAngle <= 18; offsetAngle += 18 {
 				angle := regularizeAngle(toRadians(float64(offsetAngle)) + toRadians(candidate.currentState.car.angle))
-				for thrust := 0; thrust <= 200; thrust += 50 {
+				for thrust := 0; thrust <= 200; thrust += 100 {
 					newState := applyActionOnState(checkpoints, candidate.currentState, angle, thrust)
 
 					newHistory := make([]Action, len(candidate.history), len(candidate.history)+1)
@@ -424,20 +450,32 @@ func beamSearch(checkpoints []Coord, state State) Action {
 						offsetAngleDegrees: offsetAngle,
 					})
 
-					newCandidates = append(newCandidates, Trajectory{
-						history:      newHistory,
-						currentState: newState,
-						score:        float64(newState.passedCheckpoints)*100000 - dist(newState.car.coord, checkpoints[newState.idxCheckpoint]),
-					})
+					if !seenState(newCandidates, newState) {
+						newCandidates = append(newCandidates, Trajectory{
+							history:      newHistory,
+							currentState: newState,
+							score:        float64(newState.passedCheckpoints)*100000 - dist(newState.car.coord, checkpoints[newState.idxCheckpoint]),
+						})
+					} else {
+						// log("already seen", fmt.Sprintf("#%d: %v", seen, newState))
+						seen += 1
+					}
 				}
 			}
 		}
 
-		// log("population before sort", len(newCandidates))
+		log("population before sort", len(newCandidates))
+		log("skipped", seen)
 
 		sort.Slice(newCandidates, func(i, j int) bool {
 			return newCandidates[i].score > newCandidates[j].score
 		})
+
+		if depth == 7 {
+			for i := 0; i < 10; i++ {
+				log("candidate", fmt.Sprintf("%d %f %v %v", i, newCandidates[i].score, newCandidates[i].history, newCandidates[i].currentState))
+			}
+		}
 
 		copy(population, newCandidates)
 	}
@@ -446,7 +484,7 @@ func beamSearch(checkpoints []Coord, state State) Action {
 
 	best := population[0]
 
-	log("best", fmt.Sprintf("%+v", best))
+	log("best", fmt.Sprintf("%v", best))
 
 	return best.history[0]
 }
