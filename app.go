@@ -278,8 +278,8 @@ func searchCarParams() {
 
 			thisMapSteps = 0
 
-			for over := false; !over; {
-				over, state = update(state, checkpointsMapIndex)
+			for over, turn := false, 0; !over; turn += 1 {
+				over, state = update(turn, state, checkpointsMapIndex)
 
 				displayCar = state.car
 
@@ -336,7 +336,7 @@ func applyActionOnState(checkpoints []Coord, state State, angle float64, thrust 
 	}
 }
 
-func update(state State, checkpointsMapIndex int) (bool, State) {
+func update(turn int, state State, checkpointsMapIndex int) (bool, State) {
 
 	checkpoints := allMaps[checkpointsMapIndex]
 
@@ -344,7 +344,7 @@ func update(state State, checkpointsMapIndex int) (bool, State) {
 
 	displayTarget = applyVector(state.car.coord, normalVectorFromAngle(toRadians(float64(bestAction.angle))))
 
-	// log("output", fmt.Sprintf("Going to %+v at thrust %d", targetCoord, outputThrust))
+	log("output", fmt.Sprintf("Turn %d best action is %+v", turn, bestAction))
 
 	newState := applyActionOnState(checkpoints, state, toRadians(float64(bestAction.angle)), bestAction.thrust)
 
@@ -385,7 +385,7 @@ func beamSearch(checkpoints []Coord, state State) Action {
 	over := false
 
 	for depth := 0; !over; depth += 1 {
-		log("Depth", fmt.Sprintf("%d: %d candidates", depth, len(population)))
+		// log("Depth", fmt.Sprintf("%d: %d candidates", depth, len(population)))
 
 		newCandidates := []Trajectory{}
 		for _, candidate := range population {
