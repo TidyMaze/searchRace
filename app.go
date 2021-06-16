@@ -25,7 +25,7 @@ const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 30
 const MAX_LAP = 3
 
-const POPULATION_SIZE = 2000
+const POPULATION_SIZE = 1000
 
 var fastSim = true
 var displayCheckpointsMapIndex int
