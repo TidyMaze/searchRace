@@ -25,7 +25,7 @@ const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 30
 const MAX_LAP = 3
 
-const POPULATION_SIZE = 100
+const POPULATION_SIZE = 1000
 
 var fastSim = true
 var displayCheckpointsMapIndex int
@@ -413,7 +413,7 @@ func beamSearch(checkpoints []Coord, state State) Action {
 		for _, candidate := range population {
 			for offsetAngle := -18; offsetAngle <= 18; offsetAngle += 9 {
 				angle := regularizeAngle(toRadians(float64(offsetAngle)) + toRadians(candidate.currentState.car.angle))
-				for thrust := 0; thrust <= 100; thrust += 50 {
+				for thrust := 0; thrust <= 200; thrust += 50 {
 					newState := applyActionOnState(checkpoints, candidate.currentState, angle, thrust)
 
 					newHistory := make([]Action, len(candidate.history), len(candidate.history)+1)
