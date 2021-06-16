@@ -2,15 +2,13 @@ package main
 
 import (
 	"fmt"
-	"image/color"
+	// "image/color"
 	"math"
 	"math/rand"
 	"os"
 	"sort"
-	"strconv"
 	"time"
-
-	"github.com/go-p5/p5"
+	// "github.com/go-p5/p5"
 )
 
 const MAP_WIDTH = 16000
@@ -23,7 +21,7 @@ const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 30
 const MAX_LAP = 3
 
-const POPULATION_SIZE = 200
+const POPULATION_SIZE = 100
 
 var fastSim = true
 var displayCheckpointsMapIndex int
@@ -60,8 +58,9 @@ type State struct {
 }
 
 type Action struct {
-	thrust int
-	angle  int
+	thrust             int
+	angle              int
+	offsetAngleDegrees int
 }
 
 type Trajectory struct {
@@ -71,7 +70,7 @@ type Trajectory struct {
 }
 
 func log(msg string, v interface{}) {
-	fmt.Fprintf(os.Stderr, "%s: %v\n", msg, v)
+	fmt.Fprintf(os.Stderr, "%s: %+v\n", msg, v)
 }
 
 func toRadians(a float64) float64 {
@@ -86,6 +85,16 @@ func regularizeAngle(a float64) float64 {
 	}
 	if a < -math.Pi {
 		a += 2 * math.Pi
+	}
+	return a
+}
+
+func regularizeAngleDegree(a float64) float64 {
+	if a > 180 {
+		a -= 360
+	}
+	if a < -180 {
+		a += 360
 	}
 	return a
 }
@@ -123,18 +132,18 @@ func initCar() Car {
 	}
 }
 
-func setup() {
-	rand.Seed(time.Now().UnixNano())
-	p5.Canvas(MAP_WIDTH*SCALE+500, MAP_HEIGHT*SCALE)
-	p5.Background(color.Gray{Y: 220})
+// func setup() {
+// 	rand.Seed(time.Now().UnixNano())
+// 	p5.Canvas(MAP_WIDTH*SCALE+500, MAP_HEIGHT*SCALE)
+// 	p5.Background(color.Gray{Y: 220})
 
-	allMaps = make([][]Coord, 0, MAPS_PANEL_SIZE)
-	for i := 0; i < MAPS_PANEL_SIZE; i++ {
-		allMaps = append(allMaps, randomMap())
-	}
+// 	allMaps = make([][]Coord, 0, MAPS_PANEL_SIZE)
+// 	for i := 0; i < MAPS_PANEL_SIZE; i++ {
+// 		allMaps = append(allMaps, randomMap())
+// 	}
 
-	go searchCarParams()
-}
+// 	go searchCarParams()
+// }
 
 func randInt(min int, max int) int {
 	return rand.Intn(max-min) + min
@@ -171,21 +180,21 @@ func randomMap() []Coord {
 	return res
 }
 
-func drawCheckpoints(checkpoints []Coord) {
-	p5.Fill(color.White)
-	p5.TextSize(24)
-	for i := 0; i < len(checkpoints); i++ {
-		x := checkpoints[i].x * SCALE
-		y := checkpoints[i].y * SCALE
-		p5.Circle(x, y, CP_DIAMETER*SCALE)
-		p5.Text(strconv.Itoa(i), x, y)
-	}
-}
+// func drawCheckpoints(checkpoints []Coord) {
+// 	p5.Fill(color.White)
+// 	p5.TextSize(24)
+// 	for i := 0; i < len(checkpoints); i++ {
+// 		x := checkpoints[i].x * SCALE
+// 		y := checkpoints[i].y * SCALE
+// 		p5.Circle(x, y, CP_DIAMETER*SCALE)
+// 		p5.Text(strconv.Itoa(i), x, y)
+// 	}
+// }
 
-func drawCar(car Car) {
-	p5.Fill(color.RGBA{R: 255, A: 255})
-	p5.Circle(car.coord.x*SCALE, car.coord.y*SCALE, 50)
-}
+// func drawCar(car Car) {
+// 	p5.Fill(color.RGBA{R: 255, A: 255})
+// 	p5.Circle(car.coord.x*SCALE, car.coord.y*SCALE, 50)
+// }
 
 func norm(v Vector) float64 {
 	return math.Sqrt(v.x*v.x + v.y*v.y)
@@ -360,24 +369,24 @@ func update(turn int, state State, checkpointsMapIndex int) (bool, State) {
 	return false, newState
 }
 
-func drawStats(checkpointsMapIndex int, lap int) {
-	p5.Text(fmt.Sprintf("totalStep %d\nstep %d\nmap %d/%d\nlap %d/%d", totalSteps, thisMapSteps, checkpointsMapIndex+1, MAPS_PANEL_SIZE, lap, MAX_LAP), 10, 50)
-}
+// func drawStats(checkpointsMapIndex int, lap int) {
+// 	p5.Text(fmt.Sprintf("totalStep %d\nstep %d\nmap %d/%d\nlap %d/%d", totalSteps, thisMapSteps, checkpointsMapIndex+1, MAPS_PANEL_SIZE, lap, MAX_LAP), 10, 50)
+// }
 
-func drawTarget(from Coord, to Coord) {
-	p5.Line(from.x*SCALE, from.y*SCALE, to.x*SCALE, to.y*SCALE)
-}
+// func drawTarget(from Coord, to Coord) {
+// 	p5.Line(from.x*SCALE, from.y*SCALE, to.x*SCALE, to.y*SCALE)
+// }
 
-func draw() {
-	if len(displayCheckpoints) > 0 {
-		drawCheckpoints(displayCheckpoints)
-	}
-	drawCar(displayCar)
+// func draw() {
+// 	if len(displayCheckpoints) > 0 {
+// 		drawCheckpoints(displayCheckpoints)
+// 	}
+// 	drawCar(displayCar)
 
-	drawTarget(Coord{displayCar.coord.x, displayCar.coord.y}, displayTarget)
+// 	drawTarget(Coord{displayCar.coord.x, displayCar.coord.y}, displayTarget)
 
-	drawStats(displayCheckpointsMapIndex, displayLap)
-}
+// 	drawStats(displayCheckpointsMapIndex, displayLap)
+// }
 
 func beamSearch(checkpoints []Coord, state State) Action {
 
@@ -400,14 +409,15 @@ func beamSearch(checkpoints []Coord, state State) Action {
 		for _, candidate := range population {
 			for offsetAngle := -18; offsetAngle <= 18; offsetAngle += 9 {
 				angle := regularizeAngle(toRadians(float64(offsetAngle)) + toRadians(candidate.currentState.car.angle))
-				for thrust := 0; thrust <= 100; thrust += 10 {
+				for thrust := 0; thrust <= 100; thrust += 20 {
 					newState := applyActionOnState(checkpoints, candidate.currentState, angle, thrust)
 
 					newHistory := make([]Action, len(candidate.history), len(candidate.history)+1)
 					copy(newHistory, candidate.history)
 					newHistory = append(newHistory, Action{
-						thrust: thrust,
-						angle:  int(toDegrees(angle)),
+						thrust:             thrust,
+						angle:              int(toDegrees(angle)),
+						offsetAngleDegrees: offsetAngle,
 					})
 
 					newCandidates = append(newCandidates, Trajectory{
@@ -483,7 +493,9 @@ func mainCG() {
 		bestAction := beamSearch(checkpointsList, state)
 
 		// fmt.Fprintln(os.Stderr, "Debug messages...")
-		fmt.Printf("EXPERT %d %d\n", int(bestAction.angle-angle), int(bestAction.thrust))
+		offsetAngle := bestAction.offsetAngleDegrees
+		log("offsetAngle", offsetAngle)
+		fmt.Printf("EXPERT %d %d\n", offsetAngle, int(bestAction.thrust))
 	}
 }
 
@@ -511,5 +523,6 @@ func main() {
 	assert(restrictAngle(toRadians(30), toRadians(0)), toRadians(12))
 	assert(restrictAngle(toRadians(30), toRadians(60)), toRadians(48))
 
-	p5.Run(setup, draw)
+	// p5.Run(setup, draw)
+	mainCG()
 }
