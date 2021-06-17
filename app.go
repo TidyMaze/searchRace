@@ -476,15 +476,15 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 				for thrust := 0; thrust <= 200; thrust += 200 {
 					newState := applyActionOnState(checkpoints, candidate.currentState, angle, thrust)
 
-					newHistory := make([]Action, len(candidate.history), len(candidate.history)+1)
-					copy(newHistory, candidate.history)
-					newHistory = append(newHistory, Action{
-						thrust:             thrust,
-						angle:              int(toDegrees(angle)),
-						offsetAngleDegrees: offsetAngle,
-					})
-
 					if !seenState(newCandidates, newState) {
+						newHistory := make([]Action, len(candidate.history), len(candidate.history)+1)
+						copy(newHistory, candidate.history)
+						newHistory = append(newHistory, Action{
+							thrust:             thrust,
+							angle:              int(toDegrees(angle)),
+							offsetAngleDegrees: offsetAngle,
+						})
+
 						newCandidates = append(newCandidates, Trajectory{
 							history:      newHistory,
 							currentState: newState,
