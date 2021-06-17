@@ -494,6 +494,8 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 		seenMap := make(map[int]bool, POPULATION_SIZE*5)
 
 		newCandidates = newCandidates[:0]
+		// log("newCandidates len after clear", len(newCandidates))
+		// log("newCandidates cap after clear", cap(newCandidates))
 		for iCandidate := 0; iCandidate < len(population) && !exitTimeout; iCandidate += 1 {
 			candidate := population[iCandidate]
 			for offsetAngle := -18; offsetAngle <= 18; offsetAngle += 36 {
