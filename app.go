@@ -431,7 +431,7 @@ func timeout(curTurn int, start int64) bool {
 	if curTurn == 0 {
 		maxAllowed = 1000
 	} else {
-		maxAllowed = 50
+		maxAllowed = 45
 	}
 
 	if elapsed >= int64(maxAllowed) {
