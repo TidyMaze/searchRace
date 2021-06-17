@@ -433,7 +433,13 @@ func timeout(curTurn int, start int64) bool {
 	} else {
 		maxAllowed = 50
 	}
-	return elapsed >= int64(maxAllowed)
+
+	if elapsed >= int64(maxAllowed) {
+		log("exit at", elapsed)
+		return true
+	} else {
+		return false
+	}
 }
 
 func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Action {
@@ -459,7 +465,8 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 		seen := 0
 
 		newCandidates = newCandidates[:0]
-		for _, candidate := range population {
+		for iCandidate := 0; iCandidate < len(population) && !exitTimeout; iCandidate += 1 {
+			candidate := population[iCandidate]
 			for offsetAngle := -18; offsetAngle <= 18; offsetAngle += 36 {
 				angle := regularizeAngle(toRadians(float64(offsetAngle)) + toRadians(candidate.currentState.car.angle))
 				for thrust := 0; thrust <= 200; thrust += 200 {
