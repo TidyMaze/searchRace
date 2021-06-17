@@ -387,7 +387,7 @@ func update(turn int, state State, checkpointsMapIndex int) (bool, State) {
 
 	newState.passedCheckpoints = 0
 
-	return newState.lap == 3, newState
+	return newState.lap == MAX_LAP, newState
 }
 
 func drawStats(checkpointsMapIndex int, lap int) {
