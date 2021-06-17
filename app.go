@@ -413,8 +413,27 @@ func draw() {
 	drawStats(displayCheckpointsMapIndex, displayLap)
 }
 
-func seenState(cacheMap map[State]bool, s State) bool {
-	_, found := cacheMap[s]
+func hashCar(c Car) int {
+	res := 7
+	res = 31*res + int(c.angle)
+	res = 31*res + int(c.coord.x)
+	res = 31*res + int(c.coord.y)
+	res = 31*res + int(c.vel.x)
+	res = 31*res + int(c.vel.y)
+	return res
+}
+
+func hashState(s State) int {
+	res := 7
+	res = 31*res + s.idxCheckpoint
+	res = 31*res + s.lap
+	res = 31*res + s.passedCheckpoints
+	res = 31*res + hashCar(s.car)
+	return res
+}
+
+func seenState(cacheMap map[int]bool, key int) bool {
+	_, found := cacheMap[key]
 	return found
 }
 
@@ -472,7 +491,7 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 	seen := 0
 	for depth = 0; !exitTimeout; depth += 1 {
 		// log("Depth", fmt.Sprintf("%d: %d candidates", depth, len(population)))
-		seenMap := make(map[State]bool, 10)
+		seenMap := make(map[int]bool, POPULATION_SIZE*5)
 
 		newCandidates = newCandidates[:0]
 		for iCandidate := 0; iCandidate < len(population) && !exitTimeout; iCandidate += 1 {
@@ -482,7 +501,8 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 				for thrust := 0; thrust <= 200; thrust += 200 {
 					newState := applyActionOnState(checkpoints, candidate.currentState, angle, thrust)
 
-					if !seenState(seenMap, newState) {
+					h := hashState(newState)
+					if !seenState(seenMap, h) {
 						newHistory := addHistory(candidate.history, Action{
 							thrust:             thrust,
 							angle:              int(toDegrees(angle)),
@@ -495,7 +515,7 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 							score:        float64(newState.passedCheckpoints)*100000 - dist(newState.car.coord, checkpoints[newState.idxCheckpoint]),
 						})
 
-						seenMap[newState] = true
+						seenMap[h] = true
 					} else {
 						// log("already seen", fmt.Sprintf("#%d: %v", seen, newState))
 						seen += 1
@@ -507,6 +527,8 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 				exitTimeout = true
 			}
 		}
+
+		// log("seenMap size", len(seenMap))
 
 		if !timeout(turn, turnStart) {
 
