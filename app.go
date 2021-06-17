@@ -23,7 +23,7 @@ const CP_DIAMETER = CP_RADIUS * 2
 const PADDING = 1000
 const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 30
-const MAX_LAP = 3
+const MAX_LAP = 5
 
 const POPULATION_SIZE = 50
 
