@@ -28,7 +28,7 @@ const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 30
 const MAX_LAP = 5
 
-const POPULATION_SIZE = 50
+const POPULATION_SIZE = 100
 
 var fastSim = true
 var displayCheckpointsMapIndex int
@@ -172,7 +172,9 @@ func randInt(min int, max int) int {
 }
 
 func dist(c1 Coord, c2 Coord) float64 {
-	return math.Sqrt(math.Pow(c2.x-c1.x, 2) + math.Pow(c2.y-c1.y, 2))
+	x := (c2.x - c1.x)
+	y := (c2.y - c1.y)
+	return math.Sqrt(x*x + y*y)
 }
 
 func oneCPIsTooClose(cps []Coord, c Coord) bool {
