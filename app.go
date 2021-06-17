@@ -428,6 +428,13 @@ func getElapsedMs(start int64) int64 {
 	return (getTime() - start)
 }
 
+func addHistory(history []Action, action Action) []Action {
+	newHistory := make([]Action, len(history), len(history)+1)
+	copy(newHistory, history)
+	newHistory = append(newHistory, action)
+	return newHistory
+}
+
 func timeout(curTurn int, start int64) bool {
 	elapsed := getElapsedMs(start)
 	maxAllowed := 0
@@ -477,9 +484,7 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 					newState := applyActionOnState(checkpoints, candidate.currentState, angle, thrust)
 
 					if !seenState(newCandidates, newState) {
-						newHistory := make([]Action, len(candidate.history), len(candidate.history)+1)
-						copy(newHistory, candidate.history)
-						newHistory = append(newHistory, Action{
+						newHistory := addHistory(candidate.history, Action{
 							thrust:             thrust,
 							angle:              int(toDegrees(angle)),
 							offsetAngleDegrees: offsetAngle,
