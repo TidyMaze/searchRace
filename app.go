@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	// "image/color"
-	// "strconv"
+	"image/color"
+	"strconv"
 
 	// "image/color"
 	"math"
@@ -11,7 +11,8 @@ import (
 	"os"
 	"sort"
 	"time"
-	// "github.com/go-p5/p5"
+
+	"github.com/go-p5/p5"
 )
 
 const MAP_WIDTH = 16000
@@ -24,7 +25,7 @@ const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 30
 const MAX_LAP = 3
 
-const POPULATION_SIZE = 63
+const POPULATION_SIZE = 50
 
 var fastSim = true
 var displayCheckpointsMapIndex int
@@ -150,18 +151,18 @@ func initCar() Car {
 	}
 }
 
-// func setup() {
-// 	rand.Seed(time.Now().UnixNano())
-// 	p5.Canvas(MAP_WIDTH*SCALE+500, MAP_HEIGHT*SCALE)
-// 	p5.Background(color.Gray{Y: 220})
+func setup() {
+	rand.Seed(time.Now().UnixNano())
+	p5.Canvas(MAP_WIDTH*SCALE+500, MAP_HEIGHT*SCALE)
+	p5.Background(color.Gray{Y: 220})
 
-// 	allMaps = make([][]Coord, 0, MAPS_PANEL_SIZE)
-// 	for i := 0; i < MAPS_PANEL_SIZE; i++ {
-// 		allMaps = append(allMaps, randomMap())
-// 	}
+	allMaps = make([][]Coord, 0, MAPS_PANEL_SIZE)
+	for i := 0; i < MAPS_PANEL_SIZE; i++ {
+		allMaps = append(allMaps, randomMap())
+	}
 
-// 	go searchCarParams()
-// }
+	go searchCarParams()
+}
 
 func randInt(min int, max int) int {
 	return rand.Intn(max-min) + min
@@ -198,21 +199,21 @@ func randomMap() []Coord {
 	return res
 }
 
-// func drawCheckpoints(checkpoints []Coord) {
-// 	p5.Fill(color.White)
-// 	p5.TextSize(24)
-// 	for i := 0; i < len(checkpoints); i++ {
-// 		x := checkpoints[i].x * SCALE
-// 		y := checkpoints[i].y * SCALE
-// 		p5.Circle(x, y, CP_DIAMETER*SCALE)
-// 		p5.Text(strconv.Itoa(i), x, y)
-// 	}
-// }
+func drawCheckpoints(checkpoints []Coord) {
+	p5.Fill(color.White)
+	p5.TextSize(24)
+	for i := 0; i < len(checkpoints); i++ {
+		x := checkpoints[i].x * SCALE
+		y := checkpoints[i].y * SCALE
+		p5.Circle(x, y, CP_DIAMETER*SCALE)
+		p5.Text(strconv.Itoa(i), x, y)
+	}
+}
 
-// func drawCar(car Car) {
-// 	p5.Fill(color.RGBA{R: 255, A: 255})
-// 	p5.Circle(car.coord.x*SCALE, car.coord.y*SCALE, 50)
-// }
+func drawCar(car Car) {
+	p5.Fill(color.RGBA{R: 255, A: 255})
+	p5.Circle(car.coord.x*SCALE, car.coord.y*SCALE, 50)
+}
 
 func norm(v Vector) float64 {
 	return math.Sqrt(v.x*v.x + v.y*v.y)
@@ -386,27 +387,27 @@ func update(turn int, state State, checkpointsMapIndex int) (bool, State) {
 
 	newState.passedCheckpoints = 0
 
-	return false, newState
+	return newState.lap == 3, newState
 }
 
-// func drawStats(checkpointsMapIndex int, lap int) {
-// 	p5.Text(fmt.Sprintf("totalStep %d\nstep %d\nmap %d/%d\nlap %d/%d", totalSteps, thisMapSteps, checkpointsMapIndex+1, MAPS_PANEL_SIZE, lap, MAX_LAP), 10, 50)
-// }
+func drawStats(checkpointsMapIndex int, lap int) {
+	p5.Text(fmt.Sprintf("totalStep %d\nstep %d\nmap %d/%d\nlap %d/%d", totalSteps, thisMapSteps, checkpointsMapIndex+1, MAPS_PANEL_SIZE, lap, MAX_LAP), 10, 50)
+}
 
-// func drawTarget(from Coord, to Coord) {
-// 	p5.Line(from.x*SCALE, from.y*SCALE, to.x*SCALE, to.y*SCALE)
-// }
+func drawTarget(from Coord, to Coord) {
+	p5.Line(from.x*SCALE, from.y*SCALE, to.x*SCALE, to.y*SCALE)
+}
 
-// func draw() {
-// 	if len(displayCheckpoints) > 0 {
-// 		drawCheckpoints(displayCheckpoints)
-// 	}
-// 	drawCar(displayCar)
+func draw() {
+	if len(displayCheckpoints) > 0 {
+		drawCheckpoints(displayCheckpoints)
+	}
+	drawCar(displayCar)
 
-// 	drawTarget(Coord{displayCar.coord.x, displayCar.coord.y}, displayTarget)
+	drawTarget(Coord{displayCar.coord.x, displayCar.coord.y}, displayTarget)
 
-// 	drawStats(displayCheckpointsMapIndex, displayLap)
-// }
+	drawStats(displayCheckpointsMapIndex, displayLap)
+}
 
 func seenState(ts []Trajectory, s State) bool {
 	for i := 0; i < len(ts); i++ {
@@ -429,9 +430,9 @@ func timeout(curTurn int, start int64) bool {
 	elapsed := getElapsedMs(start)
 	maxAllowed := 0
 	if curTurn == 0 {
-		maxAllowed = 950
+		maxAllowed = 50
 	} else {
-		maxAllowed = 40
+		maxAllowed = 50
 	}
 
 	if elapsed >= int64(maxAllowed) {
@@ -613,6 +614,6 @@ func main() {
 	assert(restrictAngle(toRadians(30), toRadians(0)), toRadians(12))
 	assert(restrictAngle(toRadians(30), toRadians(60)), toRadians(48))
 
-	// p5.Run(setup, draw)
-	mainCG()
+	p5.Run(setup, draw)
+	// mainCG()
 }
