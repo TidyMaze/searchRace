@@ -445,9 +445,12 @@ func timeout(curTurn int, start int64) bool {
 	}
 }
 
+var population = make([]Trajectory, 0, POPULATION_SIZE)
+var newCandidates = make([]Trajectory, 0, POPULATION_SIZE*1000)
+
 func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Action {
 
-	population := make([]Trajectory, 0, POPULATION_SIZE)
+	population = population[:0]
 
 	for iCandidate := 0; iCandidate < POPULATION_SIZE; iCandidate++ {
 		population = append(population, Trajectory{
@@ -456,8 +459,6 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 			score:        -1,
 		})
 	}
-
-	newCandidates := make([]Trajectory, 0, POPULATION_SIZE*1000)
 
 	exitTimeout := false
 
