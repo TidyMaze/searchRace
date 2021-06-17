@@ -1,8 +1,11 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"image/color"
+	"runtime"
+	"runtime/pprof"
 	"strconv"
 
 	// "image/color"
@@ -328,7 +331,6 @@ func searchCarParams() {
 			// log("Done map ", fmt.Sprintf("map %d in %d steps", checkpointsMapIndex, thisMapSteps))
 		}
 	}
-	os.Exit(0)
 }
 
 func applyAction(car Car, angle float64, thrust int) Car {
@@ -430,7 +432,7 @@ func timeout(curTurn int, start int64) bool {
 	elapsed := getElapsedMs(start)
 	maxAllowed := 0
 	if curTurn == 0 {
-		maxAllowed = 50
+		maxAllowed = 1000
 	} else {
 		maxAllowed = 50
 	}
@@ -525,7 +527,7 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 
 	best := population[0]
 
-	log("best", fmt.Sprintf("cp %d at depth %d: %v ", best.currentState.passedCheckpoints, depth, best))
+	log("best", fmt.Sprintf("cp %d at depth %d: %v ", best.currentState.passedCheckpoints, depth, best.score))
 
 	return best.history[0]
 }
@@ -614,6 +616,24 @@ func main() {
 	assert(restrictAngle(toRadians(30), toRadians(0)), toRadians(12))
 	assert(restrictAngle(toRadians(30), toRadians(60)), toRadians(48))
 
+	flag.Parse()
+	log("starting CPU profile", true)
+
+	f, err := os.Create("out.prof")
+	if err != nil {
+		log("could not create CPU profile: ", err)
+	}
+	defer f.Close()
+
+	runtime.SetCPUProfileRate(500)
+
+	if err := pprof.StartCPUProfile(f); err != nil {
+		log("could not start CPU profile: ", err)
+	}
+
+	time.AfterFunc(30*time.Second, pprof.StopCPUProfile)
+
 	p5.Run(setup, draw)
+
 	// mainCG()
 }
