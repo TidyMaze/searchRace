@@ -514,7 +514,7 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 
 	best := population[0]
 
-	log("best", fmt.Sprintf("at depth %d: %v ", depth, best))
+	log("best", fmt.Sprintf("cp %d at depth %d: %v ", best.currentState.passedCheckpoints, depth, best))
 
 	return best.history[0]
 }
