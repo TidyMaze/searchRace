@@ -470,7 +470,7 @@ func timeout(curTurn int, start int64) bool {
 }
 
 var population = make([]Trajectory, 0, POPULATION_SIZE)
-var newCandidates = make([]Trajectory, 0, POPULATION_SIZE*1000)
+var newCandidates = make([]Trajectory, 0, POPULATION_SIZE*5)
 
 func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Action {
 
