@@ -411,13 +411,9 @@ func draw() {
 	drawStats(displayCheckpointsMapIndex, displayLap)
 }
 
-func seenState(ts []Trajectory, s State) bool {
-	for i := 0; i < len(ts); i++ {
-		if isSameState(ts[i].currentState, s) {
-			return true
-		}
-	}
-	return false
+func seenState(cacheMap map[State]bool, s State) bool {
+	_, found := cacheMap[s]
+	return found
 }
 
 func getTime() int64 {
@@ -470,10 +466,11 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 	exitTimeout := false
 
 	depth := 0
+
+	seen := 0
 	for depth = 0; !exitTimeout; depth += 1 {
 		// log("Depth", fmt.Sprintf("%d: %d candidates", depth, len(population)))
-
-		seen := 0
+		seenMap := make(map[State]bool, 10)
 
 		newCandidates = newCandidates[:0]
 		for iCandidate := 0; iCandidate < len(population) && !exitTimeout; iCandidate += 1 {
@@ -483,7 +480,7 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 				for thrust := 0; thrust <= 200; thrust += 200 {
 					newState := applyActionOnState(checkpoints, candidate.currentState, angle, thrust)
 
-					if !seenState(newCandidates, newState) {
+					if !seenState(seenMap, newState) {
 						newHistory := addHistory(candidate.history, Action{
 							thrust:             thrust,
 							angle:              int(toDegrees(angle)),
@@ -495,6 +492,8 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 							currentState: newState,
 							score:        float64(newState.passedCheckpoints)*100000 - dist(newState.car.coord, checkpoints[newState.idxCheckpoint]),
 						})
+
+						seenMap[newState] = true
 					} else {
 						// log("already seen", fmt.Sprintf("#%d: %v", seen, newState))
 						seen += 1
@@ -533,7 +532,7 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 
 	best := population[0]
 
-	log("best", fmt.Sprintf("cp %d at depth %d: %v ", best.currentState.passedCheckpoints, depth, best.score))
+	log("best", fmt.Sprintf("cp %d at depth %d: %v skipped %d", best.currentState.passedCheckpoints, depth, best.score, seen))
 
 	return best.history[0]
 }
