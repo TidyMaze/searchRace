@@ -374,7 +374,9 @@ func update(turn int, state State, checkpointsMapIndex int) (bool, State) {
 
 	checkpoints := allMaps[checkpointsMapIndex]
 
-	bestAction := beamSearch(checkpoints, state)
+	turnStart := getTime()
+
+	bestAction := beamSearch(turn, turnStart, checkpoints, state)
 
 	displayTarget = state.car.coord
 
@@ -415,7 +417,26 @@ func seenState(ts []Trajectory, s State) bool {
 	return false
 }
 
-func beamSearch(checkpoints []Coord, state State) Action {
+func getTime() int64 {
+	return time.Now().UnixNano() / int64(time.Millisecond)
+}
+
+func getElapsedMs(start int64) int64 {
+	return (getTime() - start)
+}
+
+func timeout(curTurn int, start int64) bool {
+	elapsed := getElapsedMs(start)
+	maxAllowed := 0
+	if curTurn == 0 {
+		maxAllowed = 1000
+	} else {
+		maxAllowed = 50
+	}
+	return elapsed >= int64(maxAllowed)
+}
+
+func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Action {
 
 	population := make([]Trajectory, 0, POPULATION_SIZE)
 
@@ -427,11 +448,12 @@ func beamSearch(checkpoints []Coord, state State) Action {
 		})
 	}
 
-	over := false
-
 	newCandidates := make([]Trajectory, 0, POPULATION_SIZE*1000)
 
-	for depth := 0; !over && depth < 20; depth += 1 {
+	exitTimeout := false
+
+	depth := 0
+	for depth = 0; !exitTimeout; depth += 1 {
 		// log("Depth", fmt.Sprintf("%d: %d candidates", depth, len(population)))
 
 		seen := 0
@@ -463,29 +485,36 @@ func beamSearch(checkpoints []Coord, state State) Action {
 					}
 				}
 			}
+
+			if timeout(turn, turnStart) {
+				exitTimeout = true
+			}
 		}
 
-		// log("population before sort", len(newCandidates))
-		// log("skipped", seen)
+		if !exitTimeout {
 
-		sort.Slice(newCandidates, func(i, j int) bool {
-			return newCandidates[i].score > newCandidates[j].score
-		})
+			// log("population before sort", len(newCandidates))
+			// log("skipped", seen)
 
-		// if depth == 7 {
-		// 	for i := 0; i < 10; i++ {
-		// 		log("candidate", fmt.Sprintf("%d %f %v %v", i, newCandidates[i].score, newCandidates[i].history, newCandidates[i].currentState))
-		// 	}
-		// }
+			sort.Slice(newCandidates, func(i, j int) bool {
+				return newCandidates[i].score > newCandidates[j].score
+			})
 
-		copy(population, newCandidates)
+			// if depth == 7 {
+			// 	for i := 0; i < 10; i++ {
+			// 		log("candidate", fmt.Sprintf("%d %f %v %v", i, newCandidates[i].score, newCandidates[i].history, newCandidates[i].currentState))
+			// 	}
+			// }
+
+			copy(population, newCandidates)
+		}
 	}
 
 	// log("population sorted", fmt.Sprintf("pop %+v", population))
 
 	best := population[0]
 
-	log("best", fmt.Sprintf("%v", best))
+	log("best", fmt.Sprintf("at depth %d: %v ", depth, best))
 
 	return best.history[0]
 }
@@ -504,7 +533,11 @@ func mainCG() {
 		fmt.Scan(&checkpointX, &checkpointY)
 		checkpointsList = append(checkpointsList, Coord{float64(checkpointX), float64(checkpointY)})
 	}
-	for {
+
+	turn := 0
+	turnStart := int64(0)
+
+	for ; ; turn += 1 {
 		// checkpointIndex: Index of the checkpoint to lookup in the checkpoints input, initially 0
 		// x: Position X
 		// y: Position Y
@@ -513,6 +546,8 @@ func mainCG() {
 		// angle: facing angle of this car
 		var checkpointIndex, x, y, vx, vy, angle int
 		fmt.Scan(&checkpointIndex, &x, &y, &vx, &vy, &angle)
+
+		turnStart = getTime()
 
 		currentCar := Car{
 			vel: Vector{
@@ -533,7 +568,7 @@ func mainCG() {
 			passedCheckpoints: 0,
 		}
 
-		bestAction := beamSearch(checkpointsList, state)
+		bestAction := beamSearch(turn, turnStart, checkpointsList, state)
 
 		log("output", fmt.Sprintf("best action is %+v with target %d", bestAction, state.idxCheckpoint))
 
