@@ -24,7 +24,7 @@ const MAX_ANGLE_DIFF_DEGREE = 18
 const MAPS_PANEL_SIZE = 30
 const MAX_LAP = 3
 
-const POPULATION_SIZE = 70
+const POPULATION_SIZE = 63
 
 var fastSim = true
 var displayCheckpointsMapIndex int
@@ -429,9 +429,9 @@ func timeout(curTurn int, start int64) bool {
 	elapsed := getElapsedMs(start)
 	maxAllowed := 0
 	if curTurn == 0 {
-		maxAllowed = 1000
+		maxAllowed = 950
 	} else {
-		maxAllowed = 45
+		maxAllowed = 40
 	}
 
 	if elapsed >= int64(maxAllowed) {
@@ -498,7 +498,7 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 			}
 		}
 
-		if !exitTimeout {
+		if !timeout(turn, turnStart) {
 
 			// log("population before sort", len(newCandidates))
 			// log("skipped", seen)
@@ -506,6 +506,9 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 			sort.Slice(newCandidates, func(i, j int) bool {
 				return newCandidates[i].score > newCandidates[j].score
 			})
+		}
+
+		if !timeout(turn, turnStart) {
 
 			// if depth == 7 {
 			// 	for i := 0; i < 10; i++ {
