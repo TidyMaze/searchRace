@@ -490,12 +490,7 @@ func timeout(curTurn int, start int64) bool {
 		maxAllowed = 40
 	}
 
-	if elapsed >= int64(maxAllowed) {
-		log("exit at", elapsed)
-		return true
-	} else {
-		return false
-	}
+	return elapsed >= int64(maxAllowed)
 }
 
 var population = make([]Trajectory, 0, POPULATION_SIZE)
