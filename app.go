@@ -4,6 +4,7 @@ import (
 	// "flag"
 	"fmt"
 	"strconv"
+
 	// "image/color"
 	"runtime"
 	"runtime/pprof"
@@ -71,7 +72,7 @@ type Action struct {
 }
 
 type Trajectory struct {
-	history      []Action
+	firstAction  Action
 	currentState State
 	score        float64
 }
@@ -445,13 +446,6 @@ func getElapsedMs(start int64) int64 {
 	return (getTime() - start)
 }
 
-func addHistory(history []Action, action Action) []Action {
-	newHistory := make([]Action, len(history), len(history)+1)
-	copy(newHistory, history)
-	newHistory = append(newHistory, action)
-	return newHistory
-}
-
 func timeout(curTurn int, start int64) bool {
 	elapsed := getElapsedMs(start)
 	maxAllowed := 0
@@ -478,7 +472,7 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 
 	for iCandidate := 0; iCandidate < POPULATION_SIZE; iCandidate++ {
 		population = append(population, Trajectory{
-			history:      []Action{},
+			firstAction:  Action{},
 			currentState: state,
 			score:        -1,
 		})
@@ -505,14 +499,18 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 
 					h := hashState(newState)
 					if !seenState(seenMap, h) {
-						newHistory := addHistory(candidate.history, Action{
+						firstAction := Action{
 							thrust:             thrust,
 							angle:              int(toDegrees(angle)),
 							offsetAngleDegrees: offsetAngle,
-						})
+						}
+
+						if depth > 0 {
+							firstAction = candidate.firstAction
+						}
 
 						newCandidates = append(newCandidates, Trajectory{
-							history:      newHistory,
+							firstAction:  firstAction,
 							currentState: newState,
 							score:        float64(newState.passedCheckpoints)*100000 - dist(newState.car.coord, checkpoints[newState.idxCheckpoint]),
 						})
@@ -560,7 +558,7 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 
 	log("best", fmt.Sprintf("cp %d at depth %d: %v skipped %d", best.currentState.passedCheckpoints, depth, best.score, seen))
 
-	return best.history[0]
+	return best.firstAction
 }
 
 func mainCG() {
