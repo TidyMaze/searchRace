@@ -290,10 +290,41 @@ func assert(v float64, v2 float64) {
 	}
 }
 
+var cosLUT = []float64{-42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42}
+var sinLUT = []float64{-42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42}
+
+func fastCos(a float64) float64 {
+	a += math.Pi
+
+	idx := int(a / toRadians(18))
+
+	if cosLUT[idx] != -42 {
+		return cosLUT[idx]
+	} else {
+		real := math.Cos(float64(int(a*1000)) / 1000)
+		cosLUT[idx] = real
+		return real
+	}
+}
+
+func fastSin(a float64) float64 {
+	a += math.Pi
+
+	idx := int(a / toRadians(18))
+
+	if sinLUT[idx] != -42 {
+		return sinLUT[idx]
+	} else {
+		real := math.Sin(float64(int(a*1000)) / 1000)
+		sinLUT[idx] = real
+		return real
+	}
+}
+
 func normalVectorFromAngle(a float64) Vector {
 	return Vector{
-		x: math.Cos(a),
-		y: math.Sin(a),
+		x: fastCos(a),
+		y: fastSin(a),
 	}
 }
 
