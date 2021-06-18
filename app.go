@@ -466,6 +466,18 @@ func timeout(curTurn int, start int64) bool {
 var population = make([]Trajectory, 0, POPULATION_SIZE)
 var newCandidates = make([]Trajectory, 0, POPULATION_SIZE*5)
 
+type byScore []Trajectory
+
+func (s byScore) Len() int {
+	return len(s)
+}
+func (s byScore) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+func (s byScore) Less(i, j int) bool {
+	return s[i].score > s[j].score
+}
+
 func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Action {
 
 	population = population[:0]
@@ -535,9 +547,7 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 			// log("population before sort", len(newCandidates))
 			// log("skipped", seen)
 
-			sort.Slice(newCandidates, func(i, j int) bool {
-				return newCandidates[i].score > newCandidates[j].score
-			})
+			sort.Sort(byScore(newCandidates))
 		}
 
 		if !timeout(turn, turnStart) {
