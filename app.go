@@ -116,7 +116,7 @@ func regularizeAngleDegree(a float64) float64 {
 	if a > 180 {
 		a -= 360
 	}
-	if a < -180 {
+	if a <= -180 {
 		a += 360
 	}
 	return a
@@ -348,7 +348,7 @@ func applyAction(car Car, angle float64, thrust int) Car {
 	car.coord = applyVector(car.coord, car.vel)
 	car.vel = multVector(car.vel, 0.85)
 	car.vel = truncVector(car.vel)
-	car.angle = math.Round(car.angle)
+	car.angle = regularizeAngleDegree(math.Round(car.angle))
 	car.coord = truncCoord(car.coord)
 
 	return car
