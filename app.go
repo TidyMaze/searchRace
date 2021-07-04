@@ -600,7 +600,7 @@ func mainCG() {
 	turn := 0
 	turnStart := int64(0)
 
-	lastCarExpected := Car{}
+	// lastCarExpected := Car{}
 
 	for ; ; turn += 1 {
 		// checkpointIndex: Index of the checkpoint to lookup in the checkpoints input, initially 0
@@ -628,9 +628,9 @@ func mainCG() {
 
 		log("before", currentCar)
 
-		if lastCarExpected.coord.x != 0 || lastCarExpected.coord.y != 0 {
-			assertSameCar(lastCarExpected, currentCar)
-		}
+		// if lastCarExpected.coord.x != 0 || lastCarExpected.coord.y != 0 {
+		// 	assertSameCar(lastCarExpected, currentCar)
+		// }
 
 		state := State{
 			car:               currentCar,
@@ -641,7 +641,7 @@ func mainCG() {
 
 		bestAction, newCar := beamSearch(turn, turnStart, checkpointsList, state)
 		log("after", newCar)
-		lastCarExpected = newCar
+		// lastCarExpected = newCar
 
 		log("output", fmt.Sprintf("best action is %+v with target %d", bestAction, state.idxCheckpoint))
 
