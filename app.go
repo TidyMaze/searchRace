@@ -13,7 +13,9 @@ import (
 	"os"
 	"sort"
 	"time"
+
 	// "github.com/go-p5/p5"
+	"runtime/debug"
 )
 
 const MAP_WIDTH = 16000
@@ -69,9 +71,10 @@ type Action struct {
 }
 
 type Trajectory struct {
-	firstAction  Action
-	currentState State
-	score        float64
+	firstAction          Action
+	firstActionCarResult Car
+	currentState         State
+	score                float64
 }
 
 func isSameCar(c1 Car, c2 Car) bool {
@@ -287,37 +290,6 @@ func assert(v float64, v2 float64) {
 	}
 }
 
-var cosLUT = []float64{-42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42}
-var sinLUT = []float64{-42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42, -42}
-
-func fastCos(a float64) float64 {
-	a += math.Pi
-
-	idx := int(a / toRadians(18))
-
-	if cosLUT[idx] != -42 {
-		return cosLUT[idx]
-	} else {
-		real := math.Cos(float64(int(a*1000)) / 1000)
-		cosLUT[idx] = real
-		return real
-	}
-}
-
-func fastSin(a float64) float64 {
-	a += math.Pi
-
-	idx := int(a / toRadians(18))
-
-	if sinLUT[idx] != -42 {
-		return sinLUT[idx]
-	} else {
-		real := math.Sin(float64(int(a*1000)) / 1000)
-		sinLUT[idx] = real
-		return real
-	}
-}
-
 func normalVectorFromAngle(a float64) Vector {
 	return Vector{
 		x: math.Cos(a),
@@ -414,7 +386,7 @@ func update(turn int, state State, checkpointsMapIndex int) (bool, State) {
 
 	turnStart := getTime()
 
-	bestAction := beamSearch(turn, turnStart, checkpoints, state)
+	bestAction, _ := beamSearch(turn, turnStart, checkpoints, state)
 
 	displayTarget = state.car.coord
 
@@ -505,7 +477,7 @@ func (s byScore) Less(i, j int) bool {
 	return s[i].score > s[j].score
 }
 
-func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Action {
+func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) (Action, Car) {
 
 	population = population[:0]
 
@@ -544,14 +516,18 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 							offsetAngleDegrees: offsetAngle,
 						}
 
+						firstActionCarResult := newState.car
+
 						if depth > 0 {
 							firstAction = candidate.firstAction
+							firstActionCarResult = candidate.firstActionCarResult
 						}
 
 						newCandidates = append(newCandidates, Trajectory{
-							firstAction:  firstAction,
-							currentState: newState,
-							score:        float64(newState.passedCheckpoints)*100000 - dist(newState.car.coord, checkpoints[newState.idxCheckpoint]),
+							firstAction:          firstAction,
+							firstActionCarResult: firstActionCarResult,
+							currentState:         newState,
+							score:                float64(newState.passedCheckpoints)*100000 - dist(newState.car.coord, checkpoints[newState.idxCheckpoint]),
 						})
 
 						seenMap[h] = true
@@ -595,7 +571,15 @@ func beamSearch(turn int, turnStart int64, checkpoints []Coord, state State) Act
 
 	log("best", fmt.Sprintf("cp %d at depth %d: %v skipped %d", best.currentState.passedCheckpoints, depth, best.score, seen))
 
-	return best.firstAction
+	return best.firstAction, best.firstActionCarResult
+}
+
+func assertSameCar(car Car, car2 Car) {
+	assert(car.angle, car2.angle)
+	assert(car.coord.x, car2.coord.x)
+	assert(car.coord.y, car2.coord.y)
+	assert(car.vel.x, car2.vel.x)
+	assert(car.vel.y, car2.vel.y)
 }
 
 func mainCG() {
@@ -615,6 +599,8 @@ func mainCG() {
 
 	turn := 0
 	turnStart := int64(0)
+
+	lastCarExpected := Car{}
 
 	for ; ; turn += 1 {
 		// checkpointIndex: Index of the checkpoint to lookup in the checkpoints input, initially 0
@@ -637,7 +623,13 @@ func mainCG() {
 				x: float64(x),
 				y: float64(y),
 			},
-			angle: float64(angle),
+			angle: regularizeAngleDegree(float64(angle)),
+		}
+
+		log("before", currentCar)
+
+		if lastCarExpected.coord.x != 0 || lastCarExpected.coord.y != 0 {
+			assertSameCar(lastCarExpected, currentCar)
 		}
 
 		state := State{
@@ -647,7 +639,9 @@ func mainCG() {
 			passedCheckpoints: 0,
 		}
 
-		bestAction := beamSearch(turn, turnStart, checkpointsList, state)
+		bestAction, newCar := beamSearch(turn, turnStart, checkpointsList, state)
+		log("after", newCar)
+		lastCarExpected = newCar
 
 		log("output", fmt.Sprintf("best action is %+v with target %d", bestAction, state.idxCheckpoint))
 
@@ -659,6 +653,12 @@ func mainCG() {
 }
 
 func main() {
+
+	defer func() {
+		if r := recover(); r != nil {
+			log("error", fmt.Sprintf("error %v\nstacktrace from panic:\n%s", r, string(debug.Stack())))
+		}
+	}()
 
 	assert(toRadians(0), 0)
 	assert(toRadians(180), math.Pi)
